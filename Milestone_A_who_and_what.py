@@ -70,14 +70,14 @@ Team:
 
 # Change the following to represent your own information:
 
-maggie = Partner("Smith", "Margaret", "maggiesmith99")
-john = Partner("Doe", "John", "jd007")
-team = [maggie, john]
+adele = Partner("Adele", "Miller", "adelem")
+cillian = Partner("Cillian", "Murphy", "camurphy")
+team = [adele, cillian]
 
 OPTION = '1'
 # Legal options are 1, 2, and 3.
 
-title = "A Blustering Baroque Chess Player"
+title = "Rookoko: An Exuberant Chess Player"
  # In this case, the Python file for the formulation would be named End_Poverty.py.
 
 approach = '''Our approach will be to first understand the rules,
@@ -93,12 +93,12 @@ partners expect to be closely involved in writing the move-generation
 code and defining the personality of the agent.'''
 
 reference1 = '''Wikipedia article on Baroque Chess;
-    URL: https://en.wikipedia.org/wiki/Baroque_chess (accessed Feb. 22, 2018)'''
+    URL: https://en.wikipedia.org/wiki/Baroque_chess (accessed Feb. 25, 2018)'''
 
-reference2 = '''"What\'s Wrong with Ultima," by Robert Abbott,
-    available online at: http://www.logicmazes.com/games/wgr.html'''
+reference2 = '''Ultima" by Hans L. Bodlaender,
+    available online at: http://www.chessvariants.com/other.dir/ultima.html'''
 
-our_submission = Who_and_what([maggie, john], OPTION, title, approach, workload_distribution, [reference1, reference2])
+our_submission = Who_and_what([adele, cillian], OPTION, title, approach, workload_distribution, [reference1, reference2])
 
 # You can run this file from the command line by typing:
 # python3 who_and_what.py
