@@ -80,17 +80,19 @@ OPTION = '1'
 title = "Rookoko: An Exuberant Chess Player"
  # In this case, the Python file for the formulation would be named End_Poverty.py.
 
-approach = '''Our approach will be to first understand the rules,
-then code our move generator, develop a static evaluation function,
-a personality for the agent, and then optimize using alpha-beta
-pruning, Zobrist hashing, and comparison of alternative static
-evaluation functions.'''
+approach = '''Our approach will be to use the minimax algorithm in addition to
+iterative deepening, Zobrist hashing, and alpha-beta pruning. Our static evaluation
+will first need to know what the relative values of each piece is, so that we can avoid
+getting valuable pieces captured and try to get our opponent's valuable pieces. 
+Firstly, we will need to code our move generator, looking at each individual piece and
+then applying the movement rules to those pieces. We intend to pre-calculate the first 
+few state values following early moves in the game.'''
 
-workload_distribution = '''Maggie will have primary responsibility for the 
-static evaluation function, John will have primary responsibility for
-the optimizations of alpha-beta pruning and Zobrist hashing, and both
-partners expect to be closely involved in writing the move-generation
-code and defining the personality of the agent.'''
+workload_distribution = '''Cillian will have the primary responsibilty for the static eval
+function and making sure the code is efficient. He will also have the responsibility of
+making puns for our agent to say to the other agent, for his is an unrepenting pun-master.
+Adele will have the primary responsibility for implementing alpha-beta pruning and Zobrist hashing,
+with some work on the move-generation code.'''
 
 reference1 = '''Wikipedia article on Baroque Chess;
     URL: https://en.wikipedia.org/wiki/Baroque_chess (accessed Feb. 25, 2018)'''

@@ -98,7 +98,7 @@ class BC_state:
         self.board = new_board
         self.whose_move = whose_move;
 
-    def __repr__(self): # Produce an ASCII display of the state.
+    def __repr__(self):  # Produce an ASCII display of the state.
         s = ''
         for r in range(8):
             for c in range(8):
