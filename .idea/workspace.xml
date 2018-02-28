@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1d1a4c78-bf37-4c88-9ecd-e53ca6496419" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/Baroque_Chess_starter_V1.3/PlayerSkeletonA.py" afterPath="$PROJECT_DIR$/Baroque_Chess_starter_V1.3/PlayerSkeletonA.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -28,7 +27,7 @@
         <entry file="file://$PROJECT_DIR$/Milestone_A_who_and_what.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="174">
-              <caret line="79" column="31" lean-forward="true" selection-start-line="79" selection-start-column="31" selection-end-line="79" selection-end-column="31" />
+              <caret line="79" column="44" lean-forward="true" selection-start-line="79" selection-start-column="44" selection-end-line="79" selection-end-column="44" />
               <folding />
             </state>
           </provider>
@@ -37,8 +36,8 @@
       <file leaf-file-name="PlayerSkeletonA.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Baroque_Chess_starter_V1.3/PlayerSkeletonA.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="565">
-              <caret line="50" column="20" lean-forward="true" selection-start-line="50" selection-start-column="20" selection-end-line="50" selection-end-column="20" />
+            <state relative-caret-position="-353">
+              <caret line="39" column="0" lean-forward="true" selection-start-line="39" selection-start-column="0" selection-end-line="39" selection-end-column="0" />
               <folding>
                 <element signature="e#94#119#0" expanded="true" />
               </folding>
@@ -49,8 +48,8 @@
       <file leaf-file-name="BC_state_etc.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Baroque_Chess_starter_V1.3/BC_state_etc.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="15" column="40" lean-forward="true" selection-start-line="15" selection-start-column="40" selection-end-line="15" selection-end-column="40" />
+            <state relative-caret-position="99">
+              <caret line="45" column="0" lean-forward="true" selection-start-line="45" selection-start-column="0" selection-end-line="45" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -59,8 +58,8 @@
       <file leaf-file-name="adelem_TTS_agent.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../a4_adversarial_search/adelem_TTS_agent.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+            <state relative-caret-position="312">
+              <caret line="307" column="47" lean-forward="true" selection-start-line="307" selection-start-column="47" selection-end-line="307" selection-end-column="47" />
               <folding />
             </state>
           </provider>
@@ -69,8 +68,8 @@
       <file leaf-file-name="camurphy_TTS_agent.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../camurphy_TTS_agent.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="438">
-              <caret line="324" column="27" lean-forward="true" selection-start-line="324" selection-start-column="27" selection-end-line="324" selection-end-column="27" />
+            <state relative-caret-position="258">
+              <caret line="184" column="66" lean-forward="false" selection-start-line="184" selection-start-column="61" selection-end-line="184" selection-end-column="66" />
               <folding />
             </state>
           </provider>
@@ -94,6 +93,8 @@
       <find>V</find>
       <find>zob_hash</find>
       <find>ZOB_TBL</find>
+      <find>minimax</find>
+      <find>alpha</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -103,6 +104,8 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/Milestone_A_who_and_what.py" />
+        <option value="$PROJECT_DIR$/Baroque_Chess_starter_V1.3/BC_state_etc.py" />
+        <option value="$PROJECT_DIR$/../camurphy_TTS_agent.py" />
         <option value="$PROJECT_DIR$/Baroque_Chess_starter_V1.3/PlayerSkeletonA.py" />
       </list>
     </option>
@@ -300,14 +303,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Milestone_A_who_and_what.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="174">
-          <caret line="79" column="31" lean-forward="true" selection-start-line="79" selection-start-column="31" selection-end-line="79" selection-end-column="31" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Baroque_Chess_starter_V1.3/BaroqueGameMaster.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-2546">
@@ -316,34 +311,42 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Baroque_Chess_starter_V1.3/BC_state_etc.py">
+    <entry file="file://$PROJECT_DIR$/Milestone_A_who_and_what.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="15" column="40" lean-forward="true" selection-start-line="15" selection-start-column="40" selection-end-line="15" selection-end-column="40" />
+        <state relative-caret-position="174">
+          <caret line="79" column="44" lean-forward="true" selection-start-line="79" selection-start-column="44" selection-end-line="79" selection-end-column="44" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../camurphy_TTS_agent.py">
+    <entry file="file://$PROJECT_DIR$/Baroque_Chess_starter_V1.3/BC_state_etc.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="438">
-          <caret line="324" column="27" lean-forward="true" selection-start-line="324" selection-start-column="27" selection-end-line="324" selection-end-column="27" />
+        <state relative-caret-position="99">
+          <caret line="45" column="0" lean-forward="true" selection-start-line="45" selection-start-column="0" selection-end-line="45" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/../a4_adversarial_search/adelem_TTS_agent.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state relative-caret-position="312">
+          <caret line="307" column="47" lean-forward="true" selection-start-line="307" selection-start-column="47" selection-end-line="307" selection-end-column="47" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../camurphy_TTS_agent.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="258">
+          <caret line="184" column="66" lean-forward="false" selection-start-line="184" selection-start-column="61" selection-end-line="184" selection-end-column="66" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Baroque_Chess_starter_V1.3/PlayerSkeletonA.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="565">
-          <caret line="50" column="20" lean-forward="true" selection-start-line="50" selection-start-column="20" selection-end-line="50" selection-end-column="20" />
+        <state relative-caret-position="-353">
+          <caret line="39" column="0" lean-forward="true" selection-start-line="39" selection-start-column="0" selection-end-line="39" selection-end-column="0" />
           <folding>
             <element signature="e#94#119#0" expanded="true" />
           </folding>

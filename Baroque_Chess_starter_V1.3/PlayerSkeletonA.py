@@ -5,10 +5,13 @@ The beginnings of an agent that might someday play Baroque Chess.
 
 import BC_state_etc as BC
 import random
+import math
 
 zobrist_table = {}
-piece_num_dictionary = {'c': 0, 'l': 1, 'i': 2, 'w': 3, 'k': 4, 'f': 5, 'p': 6,
-                          'C': 7, 'L': 8, 'I': 9, 'W': 10, 'K': 11, 'F': 12, 'P': 13}
+piece_num_dictionary = {'-': 1, 'p': '2', 'P': 3, 'c': 4, 'C': 5, 'l': 6, 'L': 7, 'i': 8, 'I': 9,
+                        'w': 10, 'W': 11, 'k': 12, 'K': 13, 'f': 14, 'F': 15}
+# White pieces represented with lowercase letters, black with uppercase
+
 
 def makeMove(currentState, currentRemark, timelimit):
 
@@ -18,6 +21,7 @@ def makeMove(currentState, currentRemark, timelimit):
 
     # Fix up whose turn it will be.
     newState.whose_move = 1 - currentState.whose_move
+    new_move = minimax_move_finder(newState.board, newState.whose_move, 3, -math.inf, math.inf)[1]
     
     # Construct a representation of the move that goes from the
     # currentState to the newState.
@@ -30,7 +34,43 @@ def makeMove(currentState, currentRemark, timelimit):
 
     return [[move, newState], newRemark]
 
-def minimax():
+def minimax_move_finder(board, whoseMove, ply_remaining, alpha, beta):
+    # Check if a win state
+
+
+    successor_boards = generate_successors(board, whoseMove)
+
+    if ply_remaining <= 0 or len(successor_boards) <= 0:
+        return  # (board state value), None
+
+    if whoseMove == 'MaxW': bestScore = -math.inf
+    else: bestScore = math.inf
+
+    attached_move = None
+    # Loop through all keys (board states)
+    for s in successor_boards:
+        # Stop looking at board if alpha beta pruning conditions met
+        if alpha >= beta:
+            return attached_move, bestScore
+
+        result = minimax_move_finder(s, "MaxW" if whoseMove == "MinB" else "MinB", ply_remaining - 1, alpha, beta)
+        newScore = result[0]
+
+        if (whoseMove == "MaxW" and newScore > bestScore) \
+                or (whoseMove == 'MinB' and newScore < bestScore):
+            bestScore = newScore
+            attached_move = successor_boards[str(s)]
+
+            # Update alpha and beta
+            if whoseMove == 'MaxW':
+                 alpha = max(alpha, bestScore)
+            elif whoseMove == 'MinB':
+                 beta = min(beta, bestScore)
+
+    return bestScore, attached_move
+
+# Generates successors from input board
+def generate_successors(board):
     return
 
 def nickname():
@@ -41,6 +81,9 @@ def introduce():
 
 def prepare(player2Nickname):
     global zobrist_table
+
+    # Set up who player is ?
+
     # Set up Zobrist hashing - Assuming default board size 8 x 8
     for row in range(0, 8):
         for col in range(0, 8):
