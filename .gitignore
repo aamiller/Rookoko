@@ -45,6 +45,8 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+.idea/workspace.xml
+workspace.xml
 
 # Translations
 *.mo
