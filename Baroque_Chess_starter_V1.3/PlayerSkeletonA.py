@@ -8,8 +8,7 @@ import random
 import math
 
 zobrist_table = {}
-piece_num_dictionary = {'-': 1, 'p': '2', 'P': 3, 'c': 4, 'C': 5, 'l': 6, 'L': 7, 'i': 8, 'I': 9,
-                        'w': 10, 'W': 11, 'k': 12, 'K': 13, 'f': 14, 'F': 15}
+pieces = ['-', 'p', 'P', 'c', 'C', 'l', 'L', 'i', 'I w', 'W', 'k', 'K', 'f', 'F']
 # White pieces represented with lowercase letters, black with uppercase
 
 
@@ -34,7 +33,7 @@ def makeMove(currentState, currentRemark, timelimit):
 
     return [[move, newState], newRemark]
 
-def minimax_move_finder(board, whoseMove, ply_remaining, alpha, beta):
+def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=math.inf):
     # Check if a win state
 
 
@@ -80,22 +79,25 @@ def introduce():
     return "I'm Rookoko, an exuberant Baroque Chess agent."
 
 def prepare(player2Nickname):
-    global zobrist_table
+    global zobrist_table, pieces
 
     # Set up who player is ?
 
     # Set up Zobrist hashing - Assuming default board size 8 x 8
-    for row in range(0, 8):
-        for col in range(0, 8):
-            for piece in range(0, 13):
-                zobrist_table[row][col][piece] = random.getrandbits(64)
+    for row in range(8):
+        for col in range(8):
+            for piece in pieces:
+                if piece == '-':
+                    zobrist_table[(row, col, piece)] = 0 # Don't bother with a hash for the empty space
+                else:
+                    zobrist_table[(row, col, piece)] = random.getrandbits(64)
 
 # Get hash value, do bit-wise XOR
 def zob_hash(board):
-    global zobrist_table, piece_num_dictionary
+    global zobrist_table, pieces
     hash_val = 0
-    for row in range(0, 8):
-        for col in range(0, 8):
+    for row in range(8):
+        for col in range(8):
             if board[row][col] != '-':  # If not empty, get corresponding piece num from dictionary to find hash
-                hash_val ^= zobrist_table[row][col][piece_num_dictionary[board[row][col]]]
+                hash_val ^= zobrist_table[(row, col, board[row][col])]
     return hash_val
