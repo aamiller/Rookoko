@@ -7,11 +7,13 @@ import BC_state_etc as BC
 import random
 import math
 
-zobrist_table = {}
-pieces = ['-', 'p', 'P', 'c', 'C', 'l', 'L', 'i', 'I ', 'w', 'W', 'k', 'K', 'f', 'F']
+ZOB_TBL = dict()    # Table that maps each row-col-piece combo to a unique hash
+ZOB_STATES = dict() # Table that maps board hashes to their static values
+
+PIECES = ['-', 'p', 'P', 'c', 'C', 'l', 'L', 'i', 'I ', 'w', 'W', 'k', 'K', 'f', 'F']
 # White pieces represented with lowercase letters, black with uppercase
 
-STATIC_VALUES = {'-':0, 'p':-1, 'P':1, 'c':-5, 'C':5, 'l':-2, 'L':2\
+STATIC_VALUES = {'-':0, 'p':-1, 'P':1, 'c':-5, 'C':5, 'l':-2, 'L':2,\
                  'i':-4, 'I':4, 'w':-3, 'W':3, 'k':0, 'K':0, 'f':-4, 'F':4}
 
 def static_eval(board):
@@ -146,12 +148,13 @@ def generate_successors(board, whoseMove):
                         # Apply any captures to board
                         new_boards = apply_captures(board, row,col, new_r,new_c, opponentPieces, whoseMove)
                         successors.extend(new_boards)
-                        
     return successors
+
 
 def valid_space(row, col):
     # Returns whether the given coordinates fall within the boundaries of the board
     return (0 <= row < 8) and (0 <= col < 8)
+
 
 def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, whoseMove):
     (dr, dc) = (to_space[0] - from_space[0], to_space[1] - from_space[1])
@@ -253,25 +256,28 @@ def introduce():
     return "I'm Rookoko, an exuberant Baroque Chess agent."
 
 def prepare(player2Nickname):
-    global zobrist_table, pieces
+    global ZOB_TBL, ZOB_STATES, PIECES
 
     # Set up who player is ?
 
     # Set up Zobrist hashing - Assuming default board size 8 x 8
     for row in range(8):
         for col in range(8):
-            for piece in pieces:
+            for piece in PIECES:
                 if piece == '-':
-                    zobrist_table[(row, col, piece)] = 0 # Don't bother with a hash for the empty space
+                    # No need to hash the empty space
+                    ZOB_TBL[(row, col, piece)] = 0 
                 else:
-                    zobrist_table[(row, col, piece)] = random.getrandbits(64)
+                    ZOB_TBL[(row, col, piece)] = random.getrandbits(64)
+
 
 # Get hash value, do bit-wise XOR
+# Automatically check if this calculation has 
 def zob_hash(board):
-    global zobrist_table, pieces
+    global ZOB_TBL, ZOB_STATES, PIECES
     hash_val = 0
     for row in range(8):
         for col in range(8):
-            if board[row][col] != '-':  # If not empty, get corresponding piece num from dictionary to find hash
-                hash_val ^= zobrist_table[(row, col, board[row][col])]
+            if board[row][col] != '-':
+                hash_val ^= ZOB_TBL[(row, col, board[row][col])]
     return hash_val
