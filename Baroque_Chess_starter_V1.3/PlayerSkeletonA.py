@@ -18,8 +18,6 @@ def static_eval(board):
     global STATIC_VALUES
     return sum((STATIC_VALUES[p] for row in board for p in row))
 
-static_eval([['-', 'P', 'k'],['C','i','-'],['K', 'W', '-']])
-
 def makeMove(currentState, currentRemark, timelimit):
 
     # Compute the new state for a move.
