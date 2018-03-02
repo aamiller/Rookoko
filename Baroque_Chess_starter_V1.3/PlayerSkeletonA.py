@@ -72,8 +72,10 @@ def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=m
 def generate_successors(board, whoseMove):
     successors = []
     movablePieces = 'pcliwkf'
+    opponentPieces = movablePieces.upper()
     if whoseMove == 'MaxW':
-        movablePieces.upper() # White pieces are uppercase
+        opponentPieces = movablePieces
+        movablePieces = movablePieces.upper() # White pieces are uppercase
     movablePieces = list(movablePieces) # Convert string to list
 
     # Only calculate moves for now, not captures
@@ -81,33 +83,70 @@ def generate_successors(board, whoseMove):
         for col in range(8):
             piece = board[row][col]
             if piece in movablePieces:
+                # TODO: check for freezers
                 possibleSpaces = []
                 # Pawns and kings have special movement rules.
                 # All other pieces move like standard-chess queens.
                 if piece == 'k' or piece == 'K':
-                    possibleSpaces = [(i,j)\
-                                      for i in range(row-1, row+2)\
-                                      for j in range(col-1, col+2)\
-                                      if board[i,j] == '-']
+                    for r in range(row-1, col+2):
+                        for c in range(col-1, col+2):
+                            if board[r][c] == '-' or board[r][c] in opponentPieces:
+                                successors.append(apply_move(board, (row,col), (r,c)))
                 else:
                     directions = [(0,1), (1,0), (-1,0), (0,-1),\
                                   (1,1), (1,-1), (-1,1), (-1,-1)]
                     if piece == 'p' or piece == 'P':
                         directions = [(0,1), (1,0), (-1,0), (0,-1)]
-                    for direction in directions:
-                        space = [row+direction[0], col+direction[1]]
+                    for (dr,dc) in directions:
+                        space = [row+dr, col+dc]
                         while board[space[0]][space[1]] == '-':
                             possibleSpaces.append(space)
-                            space[0] += direction[0]
-                            space[1] += direction[1]
+                            space[0] += dr
+                            space[1] += dc
                 
-                for space in possibleSpaces:
-                    newBoard = [[board[r][c] for c in range(8)] for r in range(8)]
-                    newBoard[space[0]][space[1]] = piece
-                    newBoard[row][col] = '-'
-                    successors.append(newBoard)
+                for (new_r, new_c) in possibleSpaces:
+                    # Apply move to board
+                    new_board = apply_move(board, (row, col), (new_r, new_c))
+                    
+                    # Check if each move can also be a capturing move
+                    # Pawns capture by 'surrounding' opposing pieces
+                    if piece == 'p' or piece == 'P':
+                        directions = [(0,1), (1,0), (-1,0), (0,-1)]
+                        for (dr,dc) in directions:
+                            if 0 <= new_r + dr*2 < 8\
+                               and 0 <= new_c + dc*2 < 8\
+                               and board[new_r+dr][new_c+dc] in opponentPieces\
+                               and board[new_r+dr*2][new_c+dc*2] == piece:
+                                new_board[new_r+dr][new_c+dc] = '-'
+
+                    elif piece == 'c' or piece == 'C':
+                        # Coordinators capture by 'coordinating' with the king
+                        king_r, king_c = friendly_king_position(board, whoseMove)
+                        for (r,c) in [(new_r,king_c), (king_r,new_c)]:
+                            if board[r][c] in opponentPieces:
+                                new_board[r][c] = '-'
+                    
+                    successors.append(new_board)
     return successors
 
+
+def apply_move(board, from_space, to_space):
+    newBoard = [[board[r][c]\
+                 for c in range(len(board[0]))]\
+                for r in range(len(board))]
+    newBoard[to_space[0]][to_space[1]] = board[from_space[0]][from_space[1]]
+    newBoard[from_space[0]][from_space[1]] = '-'
+    return newBoard
+
+def friendly_king_position(board, whoseMove):
+    king = 'k'
+    if whoseMove == 'MaxW':
+        king = 'K'
+    for row in range(len(board)):
+        for col in range(len(board[0])):
+            if board[row][col] == king:
+                return row,col
+            
 def nickname():
     return "Newman"
 
