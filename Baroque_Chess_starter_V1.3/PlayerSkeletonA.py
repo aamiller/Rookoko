@@ -92,13 +92,24 @@ def generate_successors(board, whoseMove):
                    or (whoseMove == 'minB' and 'F' in neighbors):
                     # Pieces that have been frozen cannot move.
                     continue
+
+                # If your imitator can capture a king,
+                # there's no reason to take any other move.
+                elif (piece == 'i' and 'K' in neighbors) or\
+                     (piece == 'I' and 'k' in neighbors):
+                    for (r,c) in neighborhood:
+                        if (piece == 'i' and board[r][c] == 'K') or\
+                           (piece == 'I' and board[r][c] == 'k'):
+                            successors = [apply_move(board, (row,col), (r,c))]
+                            break
                     
-                # Pawns, kings, and leapers have special movement rules.
+                # Pawns and kings have special movement rules.
                 # All other pieces move like standard-chess queens.
-                if piece == 'k' or piece == 'K':
+                elif piece == 'k' or piece == 'K':
                     for (r,c) in neighborhood:
                         if board[r][c] == '-' or board[r][c] in opponentPieces:
                             successors.append(apply_move(board, (row,col), (r,c)))
+                            
                 else:
                     directions = [(0,1), (1,0), (-1,0), (0,-1),\
                                   (1,1), (1,-1), (-1,1), (-1,-1)]
@@ -123,21 +134,20 @@ def generate_successors(board, whoseMove):
                                 (piece == 'I' and target == 'l')):
                                 possibleSpaces.append((new_r + dr, new_c + dc))
                 
-                for (new_r, new_c) in possibleSpaces:
-                    # Apply move to board
-                    new_board = apply_move(board, row, col, new_r,new_c)
-                    # Apply any captures to board
-                    new_boards = apply_captures(board, row,col, new_r,new_c, opponentPieces)
-                    
-                    successors.append(new_board)
+                    for (new_r, new_c) in possibleSpaces:
+                        # Apply move to board
+                        new_board = apply_move(board, row, col, new_r,new_c)
+                        # Apply any captures to board
+                        new_boards = apply_captures(board, row,col, new_r,new_c, opponentPieces, whoseMove)
+                        successors.extend(new_boards)
+                        
     return successors
 
 def valid_space(row, col):
     # Returns whether the given coordinates fall within the boundaries of the board
     return (0 <= row < 8) and (0 <= col < 8)
 
-def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces):
-    friendlyPieces = 'pcliwkf'
+def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, whoseMove):
     (dr, dc) = (to_space[0] - from_space[0], to_space[1] - from_space[1])
     (dr, dc) = ((dr > 0) - (dr < 0), (dc > 0) - (dc < 0)) # Make dr and dc either 1, 0, or -1
     
@@ -146,8 +156,9 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces):
 
     # Imitators capture by 'imitating' the piece to be captured
     if piece == 'i' or piece == 'I':
-        # TODO: imitate kings
-        possiblePieces = list('pclwk') # can't imitate freezers or other imitators
+        # Imitators cannot imitate freezers or other imitators.
+        # They can imitate kings; however, that's already handled above.
+        possiblePieces = list('pclw')
         if piece == 'I':
             possiblePieces = possiblePieces.upper()
         if dr != 0 and dc != 0:
@@ -181,14 +192,14 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces):
                 new_board[r][c] = '-'
                 boards.append[new_board]
 
-     # Withdrawers capture by 'withdrawing' from an opposing piece
-     elif piece == 'w' or piece == 'W':
-         # Check the space 'behind' the withdrawer
-         if valid_space(old_r - dr, old_c - dc)\
-            and board[old_r - dr][old_c - dc] in capturablePieces:
-             new_board = copy_board(board)
-             new_board[old_r - dr][old_c - dc] = '-'
-             boards.append[new_board]
+    # Withdrawers capture by 'withdrawing' from an opposing piece
+    elif piece == 'w' or piece == 'W':
+        # Check the space 'behind' the withdrawer
+        if valid_space(old_r - dr, old_c - dc)\
+           and board[old_r - dr][old_c - dc] in capturablePieces:
+            new_board = copy_board(board)
+            new_board[old_r - dr][old_c - dc] = '-'
+            boards.append[new_board]
 
     # Leapers capture by 'leaping over' opposing pieces
     elif piece == 'l' or piece == 'L':
@@ -197,7 +208,7 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces):
             new_board = copy_board(board)
             new_board[new_r - dr][new_c - dc] = '-'
             boards.append[new_board]
-
+    
     return boards
 
 def apply_move(board, old_r, old_c, new_r, new_c):
