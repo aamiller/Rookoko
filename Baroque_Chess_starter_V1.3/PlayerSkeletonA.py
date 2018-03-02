@@ -8,7 +8,7 @@ import random
 import math
 
 zobrist_table = {}
-pieces = ['-', 'p', 'P', 'c', 'C', 'l', 'L', 'i', 'I w', 'W', 'k', 'K', 'f', 'F']
+pieces = ['-', 'p', 'P', 'c', 'C', 'l', 'L', 'i', 'I ', 'w', 'W', 'k', 'K', 'f', 'F']
 # White pieces represented with lowercase letters, black with uppercase
 
 
@@ -20,7 +20,7 @@ def makeMove(currentState, currentRemark, timelimit):
 
     # Fix up whose turn it will be.
     newState.whose_move = 1 - currentState.whose_move
-    new_move = minimax_move_finder(newState.board, newState.whose_move, 3, -math.inf, math.inf)[1]
+    new_move = minimax_move_finder(newState.board, newState.whose_move, 3)[1]
     
     # Construct a representation of the move that goes from the
     # currentState to the newState.
@@ -68,9 +68,45 @@ def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=m
 
     return bestScore, attached_move
 
-# Generates successors from input board
-def generate_successors(board):
-    return
+# Generates successors from input board by finding all possible moves
+def generate_successors(board, whoseMove):
+    successors = []
+    movablePieces = 'pcliwkf'
+    if whoseMove == 'MaxW':
+        movablePieces.upper() # White pieces are uppercase
+    movablePieces = list(movablePieces) # Convert string to list
+
+    # Only calculate moves for now, not captures
+    for row in range(8):
+        for col in range(8):
+            piece = board[row][col]
+            if piece in movablePieces:
+                possibleSpaces = []
+                # Pawns and kings have special movement rules.
+                # All other pieces move like standard-chess queens.
+                if piece == 'k' or piece == 'K':
+                    possibleSpaces = [(i,j)\
+                                      for i in range(row-1, row+2)\
+                                      for j in range(col-1, col+2)\
+                                      if board[i,j] == '-']
+                else:
+                    directions = [(0,1), (1,0), (-1,0), (0,-1),\
+                                  (1,1), (1,-1), (-1,1), (-1,-1)]
+                    if piece == 'p' or piece == 'P':
+                        directions = [(0,1), (1,0), (-1,0), (0,-1)]
+                    for direction in directions:
+                        space = [row+direction[0], col+direction[1]]
+                        while board[space[0]][space[1]] == '-':
+                            possibleSpaces.append(space)
+                            space[0] += direction[0]
+                            space[1] += direction[1]
+                
+                for space in possibleSpaces:
+                    newBoard = [[board[r][c] for c in range(8)] for r in range(8)]
+                    newBoard[space[0]][space[1]] = piece
+                    newBoard[row][col] = '-'
+                    successors.append(newBoard)
+    return successors
 
 def nickname():
     return "Newman"
