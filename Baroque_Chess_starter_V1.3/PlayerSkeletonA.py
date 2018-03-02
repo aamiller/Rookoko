@@ -11,6 +11,14 @@ zobrist_table = {}
 pieces = ['-', 'p', 'P', 'c', 'C', 'l', 'L', 'i', 'I ', 'w', 'W', 'k', 'K', 'f', 'F']
 # White pieces represented with lowercase letters, black with uppercase
 
+STATIC_VALUES = {'-':0, 'p':-1, 'P':1, 'c':-5, 'C':5, 'l':-2, 'L':2\
+                 'i':-4, 'I':4, 'w':-3, 'W':3, 'k':0, 'K':0, 'f':-4, 'F':4}
+
+def static_eval(board):
+    global STATIC_VALUES
+    return sum((STATIC_VALUES[p] for row in board for p in row))
+
+static_eval([['-', 'P', 'k'],['C','i','-'],['K', 'W', '-']])
 
 def makeMove(currentState, currentRemark, timelimit):
 
