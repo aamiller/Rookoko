@@ -28,7 +28,9 @@ def makeMove(currentState, currentRemark, timelimit):
 
     # Fix up whose turn it will be.
     newState.whose_move = 1 - currentState.whose_move
-    new_move = minimax_move_finder(newState.board, newState.whose_move, 3)[1]
+    new_move = minimax_move_finder(newState.board, newState.whose_move, 3)
+    print("NEW")
+    print(new_move)
     
     # Construct a representation of the move that goes from the
     # currentState to the newState.
@@ -43,7 +45,7 @@ def makeMove(currentState, currentRemark, timelimit):
 def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=math.inf):
     # Check if a win state
     if is_win_state(board):
-        return None, True
+        return static_eval(board), None
 
     successor_boards = generate_successors(board, whoseMove)
 
@@ -82,9 +84,9 @@ def is_win_state(board):
     kings_count = 0
     for row in range(8):
         for col in range(8):
-            if board[row][col] == 'k' or 'K':
+            if board[row][col] == 12 or 13:
                 kings_count += 1
-    return kings_count != 2
+    return kings_count == 1
 
 # Generates successors from input board by finding all possible moves
 def generate_successors(board, whoseMove):
