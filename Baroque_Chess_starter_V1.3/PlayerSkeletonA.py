@@ -43,17 +43,19 @@ def makeMove(currentState, currentRemark, timelimit):
 
 def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=math.inf):
     # Check if a win state
-
+    if is_win_state(board):
+        return None, "Win" + str(whoseMove)
 
     successor_boards = generate_successors(board, whoseMove)
 
     if ply_remaining <= 0 or len(successor_boards) <= 0:
-        return  # (board state value), None
+        return static_eval(board), None
 
     if whoseMove == 'MaxW': bestScore = -math.inf
     else: bestScore = math.inf
 
     attached_move = None
+
     # Loop through all keys (board states)
     for s in successor_boards:
         # Stop looking at board if alpha beta pruning conditions met
@@ -66,7 +68,7 @@ def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=m
         if (whoseMove == "MaxW" and newScore > bestScore) \
                 or (whoseMove == 'MinB' and newScore < bestScore):
             bestScore = newScore
-            attached_move = successor_boards[str(s)]
+            attached_move = ((row, col), (row1, col1))
 
             # Update alpha and beta
             if whoseMove == 'MaxW':
@@ -75,6 +77,15 @@ def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=m
                  beta = min(beta, bestScore)
 
     return bestScore, attached_move
+
+# Checks if current board state is a win state (no king)
+def is_win_state(board):
+    kings_count = 0
+    for row in range(8):
+        for col in range(8):
+            if board[row][col] == 'k' or 'K':
+                kings_count += 1
+    return kings_count == 2
 
 # Generates successors from input board by finding all possible moves
 def generate_successors(board, whoseMove):
@@ -158,7 +169,7 @@ def valid_space(row, col):
 
 def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, whoseMove):
     (dr, dc) = (to_space[0] - from_space[0], to_space[1] - from_space[1])
-    (dr, dc) = ((dr > 0) - (dr < 0), (dc > 0) - (dc < 0)) # Make dr and dc either 1, 0, or -1
+    (dr, dc) = ((dr > 0) - (dr < 0), (dc > 0) - (dc < 0))  # Make dr and dc either 1, 0, or -1
     
     # Looks for all possible captures, and then applies them, returning a list of new board states
     boards = []
