@@ -11,6 +11,7 @@ ZOB_TBL = dict()    # Table that maps each row-col-piece combo to a unique hash
 ZOB_STATES = dict() # Table that maps board hashes to their static values
 
 PIECES = ['-', 'p', 'P', 'c', 'C', 'l', 'L', 'i', 'I ', 'w', 'W', 'k', 'K', 'f', 'F']
+PID = BC.INIT_TO_CODE # Table that maps piece names to their numerical representations
 # White pieces represented with lowercase letters, black with uppercase
 
 STATIC_VALUES = {'-':0, 'p':-1, 'P':1, 'c':-5, 'C':5, 'l':-2, 'L':2,\
@@ -82,12 +83,13 @@ def is_win_state(board):
     kings_count = 0
     for row in range(8):
         for col in range(8):
-            if board[row][col] == 12 or 13:
+            if board[row][col] == 12 or board[row][col] == 13:
                 kings_count += 1
     return kings_count == 1
 
 # Generates successors from input board by finding all possible moves
 def generate_successors(board, whoseMove):
+    global PID
     successors = []
     movablePieces = 'pcliwkf'
     opponentPieces = movablePieces.upper()
@@ -95,8 +97,8 @@ def generate_successors(board, whoseMove):
         opponentPieces = movablePieces
         movablePieces = movablePieces.upper() # White pieces are uppercase
         
-    movablePieces = list(movablePieces) # Convert string to list
-    opponentPieces = list(opponentPieces)
+    movablePieces = [PID[piece] for piece in movablePieces] # Convert string to list
+    opponentPieces = [PID[piece] for piece in opponentPieces]
     
     # Only calculate moves for now, not captures
     for row in range(8):
@@ -106,50 +108,50 @@ def generate_successors(board, whoseMove):
                 neighborhood = get_neighborhood(row, col)
                 # Check for freezers
                 neighbors = set((board[r][c] for (r,c) in neighborhood))
-                if (whoseMove == 'maxW' and 'f' in neighbors)\
-                   or (whoseMove == 'minB' and 'F' in neighbors):
+                if (whoseMove == 'maxW' and PID['f'] in neighbors)\
+                   or (whoseMove == 'minB' and PID['F'] in neighbors):
                     # Pieces that have been frozen cannot move.
                     continue
 
                 # If your imitator can capture a king,
                 # there's no reason to take any other move.
-                elif (piece == 'i' and 'K' in neighbors) or\
-                     (piece == 'I' and 'k' in neighbors):
+                elif (piece == PID['i'] and PID['K'] in neighbors) or\
+                     (piece == PID['I'] and PID['k'] in neighbors):
                     for (r,c) in neighborhood:
-                        if (piece == 'i' and board[r][c] == 'K') or\
-                           (piece == 'I' and board[r][c] == 'k'):
+                        if (piece == PID['i'] and board[r][c] == PID['K']) or\
+                           (piece == PID['I'] and board[r][c] == PID['k']):
                             successors = [apply_move(board, (row,col), (r,c))]
                             break
                     
                 # Pawns and kings have special movement rules.
                 # All other pieces move like standard-chess queens.
-                elif piece == 'k' or piece == 'K':
+                elif piece == PID['k'] or piece == PID['K']:
                     for (r,c) in neighborhood:
-                        if board[r][c] == '-' or board[r][c] in opponentPieces:
+                        if board[r][c] == PID['-'] or board[r][c] in opponentPieces:
                             successors.append(apply_move(board, (row,col), (r,c)))
                             
                 else:
                     directions = [(0,1), (1,0), (-1,0), (0,-1),\
                                   (1,1), (1,-1), (-1,1), (-1,-1)]
-                    if piece == 'p' or piece == 'P':
+                    if piece == PID['p'] or piece == PID['P']:
                         directions = [(0,1), (1,0), (-1,0), (0,-1)]
                     for (dr,dc) in directions:
                         (new_r, new_c) = (row+dr, col+dc)
                         while valid_space(new_r, new_c) and\
-                              board[new_r][new_c] == '-':
+                              board[new_r][new_c] == PID['-']:
                             possibleSpaces.append((new_r, new_c))
                             new_r += dr
                             new_c += dc
                         # Leapers can leap (and imitators can leap over leapers)
                         # The 'leapee' should be at board[new_r][new_c]
                         if valid_space(new_r + dr, new_c + dc) and\
-                           board[new_r + dr][new_c + dc] == '-':
+                           board[new_r + dr][new_c + dc] == PID['-']:
                             target = board[new_r][new_c]
                             if target in opponentPieces and\
-                               (piece == 'l' or\
-                                piece == 'L' or\
-                                (piece == 'i' and target == 'L') or\
-                                (piece == 'I' and target == 'l')):
+                               (piece == PID['l'] or\
+                                piece == PID['L'] or\
+                                (piece == PID['i'] and target == PID['L']) or\
+                                (piece == PID['I'] and target == PID['l'])):
                                 possibleSpaces.append((new_r + dr, new_c + dc))
                 
                     for (new_r, new_c) in possibleSpaces:
@@ -174,58 +176,58 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, w
     boards = []
 
     # Imitators capture by 'imitating' the piece to be captured
-    if piece == 'i' or piece == 'I':
+    if piece == PID['i'] or piece == PID['I']:
         # Imitators cannot imitate freezers or other imitators.
         # They can imitate kings; however, that's already handled above.
-        possiblePieces = list('pclw')
-        if piece == 'I':
-            possiblePieces = possiblePieces.upper()
+        possiblePieceNames = 'pclw'
+        if piece == PID['I']:
+            possiblePieceNames = possiblePieceNames.upper()
         if dr != 0 and dc != 0:
             # Imitators cannot imitate pawns when moving diagonally
-            possiblePieces = possiblePieces[1:]
+            possiblePieceNames = possiblePieceNames[1:]
 
-        for otherPiece in possiblePieces:
+        for otherPiece in possiblePieceNames:
             # Note that capturablePieces below consists solely of
             # the opposing counterpart to otherPiece
             boards.extend(apply_captures(board, old_r, old_c, new_r, new_c,\
-                                         otherPiece, [otherPiece.swapcase()]))
+                                         PID[otherPiece], [PID[otherPiece.swapcase()]]))
 
     # Pawns capture by 'surrounding' opposing pieces
-    elif piece == 'p' or piece == 'P':
+    elif piece == PID['p'] or piece == PID['P']:
         directions = [(0,1), (1,0), (-1,0), (0,-1)]
         for (drow, dcol) in directions:
             if valid_space(new_r + drow*2, new_c + dcol*2)\
                and board[new_r+drow][new_c+dcol] in capturablePieces\
                and board[new_r+drow*2][new_c+dcol*2] == piece:
                 new_board = copy_board(board)
-                new_board[new_r+drow][new_c+dcol] = '-'
+                new_board[new_r+drow][new_c+dcol] = PID['-']
                 boards.append[new_board]
 
     # Coordinators capture by 'coordinating' with the king
-    elif piece == 'c' or piece == 'C':
+    elif piece == PID['c'] or piece == PID['C']:
         (king_r, king_c) = friendly_king_position(board, whoseMove)
         # Check the two spaces that the king and coordinator 'coordinate' together
         for (r,c) in [(to_space[0],king_c), (king_r,to_space[1])]:
             if board[r][c] in capturablePieces:
                 new_board = copy_board(board)
-                new_board[r][c] = '-'
+                new_board[r][c] = PID['-']
                 boards.append[new_board]
 
     # Withdrawers capture by 'withdrawing' from an opposing piece
-    elif piece == 'w' or piece == 'W':
+    elif piece == PID['w'] or piece == PID['W']:
         # Check the space 'behind' the withdrawer
         if valid_space(old_r - dr, old_c - dc)\
            and board[old_r - dr][old_c - dc] in capturablePieces:
             new_board = copy_board(board)
-            new_board[old_r - dr][old_c - dc] = '-'
+            new_board[old_r - dr][old_c - dc] = PID['-']
             boards.append[new_board]
 
     # Leapers capture by 'leaping over' opposing pieces
-    elif piece == 'l' or piece == 'L':
+    elif piece == PID['l'] or piece == PID['L']:
         # Check the space 'behind' the leaper's final position
         if board[new_r - dr][new_c - dc] in capturablePieces:
             new_board = copy_board(board)
-            new_board[new_r - dr][new_c - dc] = '-'
+            new_board[new_r - dr][new_c - dc] = PID['-']
             boards.append[new_board]
     
     return boards
@@ -252,9 +254,9 @@ def copy_board(board):
     return [[board[r][c] for c in range(len(board[0]))] for r in range(len(board))]
 
 def friendly_king_position(board, whoseMove):
-    king = 'k'
+    king = PID['k']
     if whoseMove == 'MaxW':
-        king = 'K'
+        king = PID['K']
     for row in range(len(board)):
         for col in range(len(board[0])):
             if board[row][col] == king:
@@ -277,18 +279,17 @@ def prepare(player2Nickname):
             for piece in PIECES:
                 if piece == '-':
                     # No need to hash the empty space
-                    ZOB_TBL[(row, col, piece)] = 0 
+                    ZOB_TBL[(row, col, PID[piece])] = 0 
                 else:
-                    ZOB_TBL[(row, col, piece)] = random.getrandbits(64)
+                    ZOB_TBL[(row, col, PID[piece])] = random.getrandbits(64)
 
 
 # Get hash value, do bit-wise XOR
-# Automatically check if this calculation has 
 def zob_hash(board):
-    global ZOB_TBL, ZOB_STATES, PIECES
+    global ZOB_TBL, ZOB_STATES
     hash_val = 0
     for row in range(8):
         for col in range(8):
-            if board[row][col] != '-':
+            if board[row][col] != PID['-']:
                 hash_val ^= ZOB_TBL[(row, col, board[row][col])]
     return hash_val
