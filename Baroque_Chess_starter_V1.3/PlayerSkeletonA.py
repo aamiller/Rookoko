@@ -34,17 +34,16 @@ def makeMove(currentState, currentRemark, timelimit):
     # currentState to the newState.
     # Here is a placeholder in the right format but with made-up
     # numbers:
-    move = ((6, 4), (3, 4))
 
     # Make up a new remark
     newRemark = "I'll think harder in some future game. Here's my move"
 
-    return [[move, newState], newRemark]
+    return [[new_move], newRemark]
 
 def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=math.inf):
     # Check if a win state
-    if winTester(board):
-        return None, "Win" + str(whoseMove)
+    if is_win_state(board):
+        return None, True
 
     successor_boards = generate_successors(board, whoseMove)
 
@@ -68,7 +67,7 @@ def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=m
         if (whoseMove == "MaxW" and newScore > bestScore) \
                 or (whoseMove == 'MinB' and newScore < bestScore):
             bestScore = newScore
-            attached_move = ((row, col), (row1, col1))
+            attached_move = s
 
             # Update alpha and beta
             if whoseMove == 'MaxW':
@@ -85,7 +84,7 @@ def is_win_state(board):
         for col in range(8):
             if board[row][col] == 'k' or 'K':
                 kings_count += 1
-    return kings_count == 2
+    return kings_count != 2
 
 # Generates successors from input board by finding all possible moves
 def generate_successors(board, whoseMove):
