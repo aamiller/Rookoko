@@ -43,7 +43,7 @@ def makeMove(currentState, currentRemark, timelimit):
 
 def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=math.inf):
     # Check if a win state
-    if is_win_state(board):
+    if winTester(board):
         return None, "Win" + str(whoseMove)
 
     successor_boards = generate_successors(board, whoseMove)
