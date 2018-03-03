@@ -38,7 +38,7 @@ def makeMove(currentState, currentRemark, timelimit):
 
     # Make up a new remark
     newRemark = "I'll think harder in some future game. Here's my move"
-
+    print(new_move)
     return [[new_move], newRemark]
 
 def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=math.inf):
@@ -47,7 +47,7 @@ def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=m
         return static_eval(board), None
 
     successor_boards = generate_successors(board, whoseMove)
-
+    print(successor_boards)
     if ply_remaining <= 0 or len(successor_boards) <= 0:
         return static_eval(board), None
 
@@ -97,7 +97,7 @@ def generate_successors(board, whoseMove):
         opponentPieces = movablePieces
         movablePieces = movablePieces.upper() # White pieces are uppercase
         
-    movablePieces = [PID[piece] for piece in movablePieces] # Convert string to list
+    movablePieces = [PID[piece] for piece in movablePieces]  # Convert string to list
     opponentPieces = [PID[piece] for piece in opponentPieces]
     
     # Only calculate moves for now, not captures
@@ -159,7 +159,7 @@ def generate_successors(board, whoseMove):
                         # Apply move to board
                         new_move, new_board = apply_move(board, row, col, new_r,new_c)
                         # Apply any captures to board
-                        new_boards = apply_captures(new_board, row,col, new_r, new_c, opponentPieces, whoseMove)
+                        new_boards = apply_captures(new_board, row,col, new_r, new_c, piece, opponentPieces, whoseMove)
                         successors.extend(((new_move, b) for b in new_boards))
     return successors
 
