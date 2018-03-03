@@ -131,6 +131,7 @@ def generate_successors(board, whoseMove):
                             successors.append(apply_move(board, (row,col), (r,c)))
                             
                 else:
+                    possible_spaces = []
                     directions = [(0,1), (1,0), (-1,0), (0,-1),\
                                   (1,1), (1,-1), (-1,1), (-1,-1)]
                     if piece == PID['p'] or piece == PID['P']:
@@ -139,7 +140,7 @@ def generate_successors(board, whoseMove):
                         (new_r, new_c) = (row+dr, col+dc)
                         while valid_space(new_r, new_c) and\
                               board[new_r][new_c] == PID['-']:
-                            possibleSpaces.append((new_r, new_c))
+                            possible_spaces.append((new_r, new_c))
                             new_r += dr
                             new_c += dc
                         # Leapers can leap (and imitators can leap over leapers)
@@ -152,9 +153,9 @@ def generate_successors(board, whoseMove):
                                 piece == PID['L'] or\
                                 (piece == PID['i'] and target == PID['L']) or\
                                 (piece == PID['I'] and target == PID['l'])):
-                                possibleSpaces.append((new_r + dr, new_c + dc))
+                                possible_spaces.append((new_r + dr, new_c + dc))
                 
-                    for (new_r, new_c) in possibleSpaces:
+                    for (new_r, new_c) in possible_spaces:
                         # Apply move to board
                         new_move, new_board = apply_move(board, row, col, new_r,new_c)
                         # Apply any captures to board
@@ -169,8 +170,9 @@ def valid_space(row, col):
 
 
 def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, whoseMove):
-    (dr, dc) = (to_space[0] - from_space[0], to_space[1] - from_space[1])
-    (dr, dc) = ((dr > 0) - (dr < 0), (dc > 0) - (dc < 0))  # Make dr and dc either 1, 0, or -1
+    # Fast and mysterious way to make dr and dc either 1, 0, or -1
+    (dr, dc) = ((old_r > new_r) - (old_r < new_r),\
+                (old_c > new_c) - (old_c < new_c))
     
     # Looks for all possible captures, and then applies them, returning a list of new board states
     boards = []
@@ -201,7 +203,7 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, w
                and board[new_r+drow*2][new_c+dcol*2] == piece:
                 new_board = copy_board(board)
                 new_board[new_r+drow][new_c+dcol] = PID['-']
-                boards.append[new_board]
+                boards.append(new_board)
 
     # Coordinators capture by 'coordinating' with the king
     elif piece == PID['c'] or piece == PID['C']:
@@ -211,7 +213,7 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, w
             if board[r][c] in capturablePieces:
                 new_board = copy_board(board)
                 new_board[r][c] = PID['-']
-                boards.append[new_board]
+                boards.append(new_board)
 
     # Withdrawers capture by 'withdrawing' from an opposing piece
     elif piece == PID['w'] or piece == PID['W']:
@@ -220,7 +222,7 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, w
            and board[old_r - dr][old_c - dc] in capturablePieces:
             new_board = copy_board(board)
             new_board[old_r - dr][old_c - dc] = PID['-']
-            boards.append[new_board]
+            boards.append(new_board)
 
     # Leapers capture by 'leaping over' opposing pieces
     elif piece == PID['l'] or piece == PID['L']:
@@ -228,9 +230,10 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, w
         if board[new_r - dr][new_c - dc] in capturablePieces:
             new_board = copy_board(board)
             new_board[new_r - dr][new_c - dc] = PID['-']
-            boards.append[new_board]
+            boards.append(new_board)
     
     return boards
+
 
 def apply_move(board, old_r, old_c, new_r, new_c):
     # Returns a tuple containing the given move followed by a copy of
@@ -262,6 +265,7 @@ def friendly_king_position(board, whoseMove):
             if board[row][col] == king:
                 return row,col
             
+
 def nickname():
     return "Rookoko"
 
