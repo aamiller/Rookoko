@@ -17,12 +17,21 @@ PID = BC.INIT_TO_CODE # Table that maps piece names to their numerical represent
 
 STATIC_VALUES = {PID['-']:0, PID['p']:-1, PID['P']:1, PID['c']:-5, PID['C']:5, PID['l']:-2, PID['L']:2,\
                  PID['i']:-4, PID['I']:4, PID['w']:-3, PID['W']:3, PID['k']:0, PID['K']:0, PID['f']:-4, PID['F']:4}
+STATIC_BOARD = None
 
 # Special global variable that stores a potential move involves a
 # leaper or imitator leaping. In that case, a capture MUST happen.
 LEAPER_CAPTURE = None 
 
 def static_eval(board):
+    global STATIC_VALUES, STATIC_BOARD
+    if STATIC_BOARD is None:
+        STATIC_BOARD = dict()
+        for r in range(8):
+            for c in range(8):
+                for key in STATIC_VALUES.keys():
+                    STATIC_BOARD[(r,c,key)] = pos_val(r,c)*STATIC_VALUES[key]
+    
     pieces = set((p for row in board for p in row))
     if PID['k'] not in pieces:
         # Missing black king is a win for white
@@ -31,8 +40,7 @@ def static_eval(board):
         # Missing white king is a win for black
         return -math.inf
     
-    global STATIC_VALUES
-    val = sum((pos_val(r,c)*STATIC_VALUES[board[r][c]] for r in range(8) for c in range(8)))
+    val = sum((STATIC_BOARD[(r,c,board[r][c])] for r in range(8) for c in range(8)))
     # Encourage spacing out pieces
     #val += sum(((2*BC.who(board[r][c])-1)\
     #            for r in range(8)\
@@ -48,7 +56,7 @@ def makeMove(current_state, current_remark, time_limit):
 
     # Fix up whose turn it will be.
     whose_move = "MinB" if current_state.whose_move == BC.BLACK else "MaxW"
-    new_score, new_move_and_state = minimax_move_finder(current_state.board, whose_move, 3)
+    new_score, new_move_and_state = minimax_move_finder((current_state.board, zob_hash(current_state.board)), whose_move, 3)
     print(new_score)
 
     # Compute the new state for a move.
@@ -63,15 +71,22 @@ def makeMove(current_state, current_remark, time_limit):
     return ((new_move_and_state), new_remark)
 
 
-def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=math.inf):
+def minimax_move_finder(board_and_hash, whoseMove, ply_remaining, alpha=-math.inf, beta=math.inf):
+    global ZOB_STATES
+
+    board, zhash = board_and_hash
+    if zhash not in ZOB_STATES:
+        ZOB_STATES[zhash] = static_eval(board)
+    value = ZOB_STATES[zhash]
+    
     # Check if a win state
     if is_win_state(board):
-        return static_eval(board), None
+        return value, None
 
     successor_boards = generate_successors(board, zob_hash(board), whoseMove)
 
     if ply_remaining <= 0 or len(successor_boards) <= 0:
-        return static_eval(board), None
+        return value, None
 
     best_score = math.inf
     next_player = 'MaxW'
@@ -82,22 +97,22 @@ def minimax_move_finder(board, whoseMove, ply_remaining, alpha=-math.inf, beta=m
     attached_move_and_state = None
 
     # Loop through all possible successor board states
-    for s_move, s_board in successor_boards:
+    for s_move, s_board_and_hash in successor_boards:
         # Stop searching if alpha-beta pruning conditions met
         if alpha >= beta:
             return best_score, attached_move_and_state
 
-        result = minimax_move_finder(s_board, next_player, ply_remaining - 1, alpha, beta)
+        result = minimax_move_finder(s_board_and_hash, next_player, ply_remaining - 1, alpha, beta)
         s_score = result[0]
-        
+
+        # Debug printing
         if ply_remaining == 3 and (board[0][4] != 12 or board[7][4] != 13):
             print(s_move, s_score, best_score)
   
         if (whoseMove == "MaxW" and s_score > best_score) \
-                or (whoseMove == 'MinB' and s_score < best_score)\
-                or (s_score == best_score and random.random() < 0.2): # If two choices are equally good, choose randomly!
+                or (whoseMove == 'MinB' and s_score < best_score): # If two choices are equally good, choose randomly?
             best_score = s_score
-            attached_move_and_state = (s_move, s_board)
+            attached_move_and_state = (s_move, s_board_and_hash[0])
 
             # Update alpha and beta
             if whoseMove == 'MaxW':
@@ -122,77 +137,74 @@ def generate_successors(board, zhash, whoseMove):
         opponentPieces = opponentPieces.swapcase()
         movablePieces = movablePieces.swapcase() # White pieces are uppercase
         
-    movablePieces = [PID[piece] for piece in movablePieces] # Convert string to list
-    opponentPieces = [PID[piece] for piece in opponentPieces]
+    movablePieces = set(PID[piece] for piece in movablePieces) # Convert string to list
+    opponentPieces = set(PID[piece] for piece in opponentPieces)
 
     board_and_hash = (board, zhash)
     
     # Only calculate moves for now, not captures
-    for row in range(8):
-        for col in range(8):
-            LEAPER_CAPTURE = []
-            piece = board[row][col]
-            if piece == PID['-']:
-                continue
-            if piece in movablePieces:
-                neighborhood = get_neighborhood(row, col)
-                # Check for freezers
-                neighbors = set((board[r][c] for (r,c) in neighborhood))
-                if (whoseMove == 'maxW' and PID['f'] in neighbors)\
-                   or (whoseMove == 'minB' and PID['F'] in neighbors):
-                    # Pieces that have been frozen cannot move.
-                    continue
+    potentials = set(((row,col) for row in range(8) for col in range(8) if board[row][col] in movablePieces))
+    for row,col in potentials:
+        LEAPER_CAPTURE = []
+        piece = board[row][col]
+        neighborhood = get_neighborhood(row, col)
+        # Check for freezers
+        neighbors = set((board[r][c] for (r,c) in neighborhood))
+        if (whoseMove == 'maxW' and PID['f'] in neighbors)\
+           or (whoseMove == 'minB' and PID['F'] in neighbors):
+            # Pieces that have been frozen cannot move.
+            continue
 
-                # If your imitator can capture a king,
-                # there's no reason to take any other move.
-                elif (piece == PID['i'] and PID['K'] in neighbors) or\
-                     (piece == PID['I'] and PID['k'] in neighbors):
-                    for (new_r,new_c) in neighborhood:
-                        if (piece == PID['i'] and board[new_r][new_c] == PID['K']) or\
-                           (piece == PID['I'] and board[new_r][new_c] == PID['k']):
-                            successors = [apply_move(board_and_hash, row, col, new_r, new_c)]
-                            break
+        # If your imitator can capture a king,
+        # there's no reason to take any other move.
+        elif (piece == PID['i'] and PID['K'] in neighbors) or\
+             (piece == PID['I'] and PID['k'] in neighbors):
+            for (new_r,new_c) in neighborhood:
+                if (piece == PID['i'] and board[new_r][new_c] == PID['K']) or\
+                   (piece == PID['I'] and board[new_r][new_c] == PID['k']):
+                    successors = [apply_move(board_and_hash, row, col, new_r, new_c)]
+                    break
+            
+        # Pawns and kings have special movement rules.
+        # All other pieces move like standard-chess queens.
+        elif piece == PID['k'] or piece == PID['K']:
+            for (new_r,new_c) in neighborhood:
+                if board[new_r][new_c] == PID['-'] or board[new_r][new_c] in opponentPieces:
+                    successors.append(apply_move(board_and_hash, row, col, new_r, new_c))
                     
-                # Pawns and kings have special movement rules.
-                # All other pieces move like standard-chess queens.
-                elif piece == PID['k'] or piece == PID['K']:
-                    for (new_r,new_c) in neighborhood:
-                        if board[new_r][new_c] == PID['-'] or board[new_r][new_c] in opponentPieces:
-                            successors.append(apply_move(board_and_hash, row, col, new_r, new_c))
-                            
-                else:
-                    possible_spaces = []
-                    directions = [(0,1), (1,0), (-1,0), (0,-1),\
-                                  (1,1), (1,-1), (-1,1), (-1,-1)]
-                    if piece == PID['p'] or piece == PID['P']:
-                        directions = [(0,1), (1,0), (-1,0), (0,-1)]
-                    for (dr,dc) in directions:
-                        (new_r, new_c) = (row+dr, col+dc)
-                        while valid_space(new_r, new_c) and\
-                              board[new_r][new_c] == PID['-']:
-                            possible_spaces.append((new_r, new_c))
-                            new_r += dr
-                            new_c += dc
-                        # Leapers can leap (and imitators can leap over leapers)
-                        # The 'leapee' should be at board[new_r][new_c]
-                        if valid_space(new_r + dr, new_c + dc) and\
-                           board[new_r + dr][new_c + dc] == PID['-']:
-                            target = board[new_r][new_c]
-                            if target in opponentPieces and\
-                               (piece == PID['l'] or\
-                                piece == PID['L'] or\
-                                (piece == PID['i'] and target == PID['L']) or\
-                                (piece == PID['I'] and target == PID['l'])):
-                                LEAPER_CAPTURE.append((new_r + dr, new_c + dc))
-                                possible_spaces.append((new_r + dr, new_c + dc))
-                
-                    for (new_r, new_c) in possible_spaces:
-                        # Apply move to board
-                        new_move, new_board_and_hash = apply_move(board_and_hash, row, col, new_r,new_c)
-                        # Apply any captures to board
-                        new_boards = apply_captures(new_board_and_hash, row,col, new_r, new_c,\
-                                                    piece, opponentPieces, whoseMove)
-                        successors.extend(((new_move, b) for b in new_boards))
+        else:
+            possible_spaces = []
+            directions = [(0,1), (1,0), (-1,0), (0,-1),\
+                          (1,1), (1,-1), (-1,1), (-1,-1)]
+            if piece == PID['p'] or piece == PID['P']:
+                directions = [(0,1), (1,0), (-1,0), (0,-1)]
+            for (dr,dc) in directions:
+                (new_r, new_c) = (row+dr, col+dc)
+                while valid_space(new_r, new_c) and\
+                      board[new_r][new_c] == PID['-']:
+                    possible_spaces.append((new_r, new_c))
+                    new_r += dr
+                    new_c += dc
+                # Leapers can leap (and imitators can leap over leapers)
+                # The 'leapee' should be at board[new_r][new_c]
+                if valid_space(new_r + dr, new_c + dc) and\
+                   board[new_r + dr][new_c + dc] == PID['-']:
+                    target = board[new_r][new_c]
+                    if target in opponentPieces and\
+                       (piece == PID['l'] or\
+                        piece == PID['L'] or\
+                        (piece == PID['i'] and target == PID['L']) or\
+                        (piece == PID['I'] and target == PID['l'])):
+                        LEAPER_CAPTURE.append((new_r + dr, new_c + dc))
+                        possible_spaces.append((new_r + dr, new_c + dc))
+        
+            for (new_r, new_c) in possible_spaces:
+                # Apply move to board
+                new_move, new_board_and_hash = apply_move(board_and_hash, row, col, new_r,new_c)
+                # Apply any captures to board
+                new_boards = apply_captures(new_board_and_hash, row,col, new_r, new_c,\
+                                            piece, opponentPieces, whoseMove)
+                successors.extend(((new_move, b) for b in new_boards))
     return successors
 
 
@@ -296,10 +308,10 @@ def apply_move(board_and_hash, old_r, old_c, new_r, new_c):
     # Returns a tuple containing the given move followed by a copy of
     # the given board with the result of a piece's (non-capturing) move
     board, new_hash = board_and_hash
-    new_hash ^= ZOB_TBL[(new_r, new_c, new_board[new_r][new_c])]
-    new_hash ^= ZOB_TBL[(old_r, old_c, new_board[old_r][old_c])]
-    new_hash ^= ZOB_TBL[(new_r, new_c, new_board[old_r][old_c])]
-    new_board = [[board[r][c] for c in range(len(board[0]))] for r in range(len(board))]
+    new_hash ^= ZOB_TBL[(new_r, new_c, board[new_r][new_c])]
+    new_hash ^= ZOB_TBL[(old_r, old_c, board[old_r][old_c])]
+    new_hash ^= ZOB_TBL[(new_r, new_c, board[old_r][old_c])]
+    new_board = copy_board(board)
     new_board[new_r][new_c] = new_board[old_r][old_c]
     new_board[old_r][old_c] = PID['-']
     return ((old_r, old_c),(new_r, new_c)), (new_board, new_hash)
