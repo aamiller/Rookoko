@@ -155,10 +155,10 @@ def generate_successors(board, whoseMove):
                 
                     for (new_r, new_c) in possibleSpaces:
                         # Apply move to board
-                        new_board = apply_move(board, row, col, new_r,new_c)
+                        new_move, new_board = apply_move(board, row, col, new_r,new_c)
                         # Apply any captures to board
-                        new_boards = apply_captures(board, row,col, new_r,new_c, opponentPieces, whoseMove)
-                        successors.extend(new_boards)
+                        new_boards = apply_captures(new_board, row,col, new_r, new_c, opponentPieces, whoseMove)
+                        successors.extend(((new_move, b) for b in new_boards))
     return successors
 
 
@@ -232,11 +232,12 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, w
     return boards
 
 def apply_move(board, old_r, old_c, new_r, new_c):
-    # Updates the given board with the result of a piece's (non-capturing) move
+    # Returns a tuple containing the given move followed by a copy of
+    # the given board with the result of a piece's (non-capturing) move
     new_board = [[board[r][c] for c in range(len(board[0]))] for r in range(len(board))]
     new_board[new_r][new_c] = new_board[old_r][old_c]
     new_board[old_r][old_c] = '-'
-    return new_board
+    return ((old_r, old_c),(new_r, new_c)), new_board
 
 def get_neighborhood(row, col):
     # Returns a list of coordinates of the 8 spaces surrounding a given square.
