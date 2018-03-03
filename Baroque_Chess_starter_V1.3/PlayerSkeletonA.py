@@ -18,7 +18,7 @@ STATIC_VALUES = {'-':0, 'p':-1, 'P':1, 'c':-5, 'C':5, 'l':-2, 'L':2,\
 
 def static_eval(board):
     global STATIC_VALUES
-    return sum((STATIC_VALUES[p] for row in board for p in row))
+    return 5#sum((STATIC_VALUES[p] for row in board for p in row))
 
 def makeMove(currentState, currentRemark, timelimit):
 
@@ -27,10 +27,8 @@ def makeMove(currentState, currentRemark, timelimit):
     newState = BC.BC_state(currentState.board)
 
     # Fix up whose turn it will be.
-    newState.whose_move = 1 - currentState.whose_move
+    newState.whose_move = "MinB" if newState.whose_move == "MaxW" else "MaxW"
     new_move = minimax_move_finder(newState.board, newState.whose_move, 3)
-    print("NEW")
-    print(new_move)
     
     # Construct a representation of the move that goes from the
     # currentState to the newState.
