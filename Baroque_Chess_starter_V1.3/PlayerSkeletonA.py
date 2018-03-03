@@ -10,7 +10,7 @@ import math
 ZOB_TBL = dict()    # Table that maps each row-col-piece combo to a unique hash
 ZOB_STATES = dict() # Table that maps board hashes to their static values
 
-PIECES = ['-', 'p', 'P', 'c', 'C', 'l', 'L', 'i', 'I ', 'w', 'W', 'k', 'K', 'f', 'F']
+PIECES = ['-', 'p', 'P', 'c', 'C', 'l', 'L', 'i', 'I', 'w', 'W', 'k', 'K', 'f', 'F']
 PID = BC.INIT_TO_CODE # Table that maps piece names to their numerical representations
 # White pieces represented with lowercase letters, black with uppercase
 
@@ -263,15 +263,13 @@ def friendly_king_position(board, whoseMove):
                 return row,col
             
 def nickname():
-    return "Newman"
+    return "Rookoko"
 
 def introduce():
     return "I'm Rookoko, an exuberant Baroque Chess agent."
 
 def prepare(player2Nickname):
-    global ZOB_TBL, ZOB_STATES, PIECES
-
-    # Set up who player is ?
+    global ZOB_TBL, ZOB_STATES, PIECES, PID
 
     # Set up Zobrist hashing - Assuming default board size 8 x 8
     for row in range(8):
@@ -279,9 +277,10 @@ def prepare(player2Nickname):
             for piece in PIECES:
                 if piece == '-':
                     # No need to hash the empty space
-                    ZOB_TBL[(row, col, PID[piece])] = 0 
+                    ZOB_TBL[(row, col, PID[piece])] = 0
                 else:
                     ZOB_TBL[(row, col, PID[piece])] = random.getrandbits(64)
+    return "Ready to rumble!"
 
 
 # Get hash value, do bit-wise XOR
