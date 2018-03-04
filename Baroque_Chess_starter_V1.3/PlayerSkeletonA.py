@@ -73,7 +73,7 @@ def makeMove(current_state, current_remark, time_limit):
 
 def iterative_deepening_minimax(board_and_hash, whoseMove, time_limit):
     # Get the time the program should return a move by, factoring in time to get to this line
-    end_time = time_limit + time.time() + .01
+    end_time = time_limit + time.time() - .01
 
     # Set defaults
     ply = 0
@@ -121,7 +121,7 @@ def minimax_move_finder(board_and_hash, whoseMove, ply_remaining, end_time, alph
     # Loop through all possible successor board states
     for s_move, s_board_and_hash in successor_boards:
         # Check that there is time to deepen, if not return best move so far
-        if time.time() >= end_time + .01:
+        if time.time() >= end_time - .01:
             return best_score, attached_move_and_state
 
         # Stop searching if alpha-beta pruning conditions met
