@@ -83,7 +83,7 @@ def iterative_deepening_minimax(board_and_hash, whoseMove, time_limit):
     # Run minimax with increasing ply while time remaining
     while time.time() <= end_time:
         ply += 1
-        next_move, next_score = minimax_move_finder(board_and_hash, whoseMove, ply, -math.inf, math.inf)
+        next_move, next_score = minimax_move_finder(board_and_hash, whoseMove, ply, end_time, -math.inf, math.inf)
 
         if time.time() <= end_time and next_move is not None:
             best_move = next_move
@@ -93,7 +93,7 @@ def iterative_deepening_minimax(board_and_hash, whoseMove, time_limit):
 
 
 
-def minimax_move_finder(board_and_hash, whoseMove, ply_remaining, alpha=-math.inf, beta=math.inf):
+def minimax_move_finder(board_and_hash, whoseMove, ply_remaining, end_time, alpha=-math.inf, beta=math.inf):
     global ZOB_STATES
 
     board, zhash = board_and_hash
@@ -120,6 +120,10 @@ def minimax_move_finder(board_and_hash, whoseMove, ply_remaining, alpha=-math.in
 
     # Loop through all possible successor board states
     for s_move, s_board_and_hash in successor_boards:
+        # Check that there is time to deepen, if not return best move so far
+        if time.time() >= end_time + .01:
+            return best_score, attached_move_and_state
+
         # Stop searching if alpha-beta pruning conditions met
         if alpha >= beta:
             return best_score, attached_move_and_state
