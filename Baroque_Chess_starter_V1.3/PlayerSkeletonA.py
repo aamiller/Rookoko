@@ -56,7 +56,7 @@ def makeMove(current_state, current_remark, time_limit):
 
     # Fix up whose turn it will be.
     whose_move = "MinB" if current_state.whose_move == BC.BLACK else "MaxW"
-    new_score, new_move_and_state = minimax_move_finder((current_state.board, zob_hash(current_state.board)), whose_move, 3)
+    new_score, new_move_and_state = iterative_deepening_minimax((current_state.board, zob_hash(current_state.board)), whose_move, time_limit)
     print(new_score)
 
     # Compute the new state for a move.
@@ -69,6 +69,28 @@ def makeMove(current_state, current_remark, time_limit):
     new_remark = "I'll think harder in some future game. Here's my move"
 
     return ((new_move_and_state), new_remark)
+
+
+def iterative_deepening_minimax(board_and_hash, whoseMove, time_limit):
+    # Get the time the program should return a move by, factoring in time to get to this line
+    end_time = time_limit + time.time() + .01
+
+    # Set defaults
+    ply = 0
+    best_move = [(1, 1), (1, 1)]
+    best_score = 0
+
+    # Run minimax with increasing ply while time remaining
+    while time.time() <= end_time:
+        ply += 1
+        next_move, next_score = minimax_move_finder(board_and_hash, whoseMove, ply, -math.inf, math.inf)
+
+        if time.time() <= end_time and next_move is not None:
+            best_move = next_move
+            best_score = next_score
+    return best_move, best_score
+
+
 
 
 def minimax_move_finder(board_and_hash, whoseMove, ply_remaining, alpha=-math.inf, beta=math.inf):
@@ -105,10 +127,6 @@ def minimax_move_finder(board_and_hash, whoseMove, ply_remaining, alpha=-math.in
         result = minimax_move_finder(s_board_and_hash, next_player, ply_remaining - 1, alpha, beta)
         s_score = result[0]
 
-        # Debug printing
-        if ply_remaining == 3 and (board[0][4] != 12 or board[7][4] != 13):
-            print(s_move, s_score, best_score)
-  
         if (whoseMove == "MaxW" and s_score > best_score) \
                 or (whoseMove == 'MinB' and s_score < best_score): # If two choices are equally good, choose randomly?
             best_score = s_score
