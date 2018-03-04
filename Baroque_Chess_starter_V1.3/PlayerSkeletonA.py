@@ -121,7 +121,7 @@ def minimax_move_finder(board_and_hash, whoseMove, ply_remaining, end_time, alph
     # Loop through all possible successor board states
     for s_move, s_board_and_hash in successor_boards:
         # Check that there is time to deepen, if not return best move so far
-        if time.time() >= end_time - .01:
+        if time.time() <= end_time - .01:
             return best_score, attached_move_and_state
 
         # Stop searching if alpha-beta pruning conditions met
