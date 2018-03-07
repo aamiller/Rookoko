@@ -325,9 +325,6 @@ def apply_captures(board, zhash, old_r, old_c, new_r, new_c, piece, capturablePi
         LEAPER_CAPTURE.remove((old_r, old_c), (new_r, new_c))
         new_board = copy_board(board)
         new_board[new_r - dr][new_c - dc] = EMPTY
-        print("leaper capture!!!!")
-        print(LEAPER_CAPTURE)
-        print(board[new_r-dr][new_c-dc])
         new_hash = zhash ^ ZOB_TBL[(new_r - dr, new_c - dc, board[new_r - dr][new_c - dc])]
         return [(new_board, new_hash)]
 
