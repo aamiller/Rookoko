@@ -9,7 +9,7 @@ import math
 import time
 import threading
 
-TIME_INC = .005 # Global variable representing the number of seconds an iteration takes
+TIME_INC = .015 # Global variable representing the number of seconds an iteration takes
 
 TURNS = 0 # Global variable representing the number of turns that have passed so far
 
@@ -41,6 +41,7 @@ STATIC_VALUES = {EMPTY:0,\
 # 
 STATIC_BOARD = None
 
+STATISTICS = {"Z_SUCCESS": 0, "Z_QUERIES": 0, "AB_CUTOFFS": 0, "STATIC_EVALS": 0}
 # Special global variable that stores potential moves involving a
 # leaper (or imitator) leaping. In that case, a capture MUST happen,
 # so no non-capturing successor boards will be considered for that move.
@@ -111,7 +112,7 @@ def pos_val(r, c):
     return 1 + ((r)*(7-r)*(c)*(7-c))/256
 
 def makeMove(current_state, current_remark, time_limit):
-    global TURNS, EVAL_THREAD, EVAL_THREAD_EXIT, DYN_VALS, ZOB_STATES, PUN_GENERATOR
+    global TURNS, EVAL_THREAD, EVAL_THREAD_EXIT, DYN_VALS, ZOB_STATES, PUN_GENERATOR, STATISTICS
     if EVAL_THREAD and EVAL_THREAD.is_alive():
         EVAL_THREAD_EXIT = True
         EVAL_THREAD.join()
@@ -122,11 +123,18 @@ def makeMove(current_state, current_remark, time_limit):
         DYN_VALS = dict()
         ZOB_STATES = dict()
 
+    STATISTICS = {"Z_SUCCESS": 0, "Z_QUERIES": 0, "AB_CUTOFFS": 0, "STATIC_EVALS": 0}
+
     # Fix up whose turn it will be.
     whose_move = current_state.whose_move
     state_hash = zob_hash(current_state.board)
-    new_score, new_move_and_state = iterative_deepening_minimax(current_state.board, state_hash, whose_move, time_limit)
+    new_score, new_move_and_state, ply_used = iterative_deepening_minimax(current_state.board, state_hash, whose_move, time_limit)
     #print(new_score)
+    print("IDDFS reached ply", ply_used, "before running out of time.")
+    print("Minimax search performed", STATISTICS["AB_CUTOFFS"], "alpha-beta cutoffs.")
+    print("Minimax search performed", STATISTICS["STATIC_EVALS"], "static evals.")
+    print("Zobrist hash table had", STATISTICS["Z_QUERIES"], "total queries.")
+    print("Zobrist hash table had", STATISTICS["Z_SUCCESS"], "successful queries.")
 
     # Compute the new state for a move.
     new_state = BC_state(new_move_and_state[1])
@@ -165,7 +173,7 @@ def iterative_deepening_minimax(board, zhash, whoseMove, time_limit):
         if time.time() <= end_time - TIME_INC:
             best_move = next_move
             best_score = next_score
-    return best_score, best_move
+    return best_score, best_move, ply
 
 
 def state_evaluator(state):
@@ -188,29 +196,39 @@ def state_evaluator(state):
 
 
 def minimax_move_finder(board, zhash, whoseMove, ply_remaining, end_time, alpha=-math.inf, beta=math.inf):
-    global ZOB_STATES, TIME_INC, DYN_VALS, EVAL_THREAD, EVAL_THREAD_EXIT
+    global ZOB_STATES, TIME_INC, DYN_VALS, EVAL_THREAD, EVAL_THREAD_EXIT, STATISTICS
     if EVAL_THREAD and EVAL_THREAD_EXIT:
         raise threading.ThreadError
 
     if zhash in DYN_VALS:
+        STATISTICS["Z_SUCCESS"] += 1
         dyn_ret, dyn_ply = DYN_VALS[zhash]
         if dyn_ply >= ply_remaining:
             return dyn_ret
+    else:
+        STATISTICS["Z_QUERIES"] += 1
     
     # Check if a win state
     win_state = is_win_state(board)
     if win_state:
+        STATISTICS["Z_QUERIES"] += 1
         if zhash not in ZOB_STATES:
             ZOB_STATES[zhash] = win_state
             DYN_VALS[zhash] = ((win_state, None), math.inf)
+        else:
+            STATISTICS["Z_SUCCESS"] += 1
         return win_state, None
 
     successor_boards = generate_successors(board, zhash, whoseMove)
 
     if ply_remaining <= 0 or len(successor_boards) == 0:
+        STATISTICS["Z_QUERIES"] += 1
         if zhash not in ZOB_STATES:
+            STATISTICS["STATIC_EVALS"] += 1
             ZOB_STATES[zhash] = static_eval(board)
             DYN_VALS[zhash] = ((ZOB_STATES[zhash], None), 0)
+        else:
+            STATISTICS["Z_SUCCESS"] += 1
         return ZOB_STATES[zhash], None
 
     next_player = 1 - whoseMove
@@ -229,6 +247,7 @@ def minimax_move_finder(board, zhash, whoseMove, ply_remaining, end_time, alpha=
 
         # Stop searching if alpha-beta pruning conditions met
         if alpha >= beta:
+            STATISTICS["AB_CUTOFFS"] += 1
             return best_score, attached_move_and_state
 
         result = minimax_move_finder(s_board, s_hash, next_player, ply_remaining - 1, end_time - TIME_INC, alpha, beta)
