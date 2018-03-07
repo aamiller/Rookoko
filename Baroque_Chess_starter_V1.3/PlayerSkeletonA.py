@@ -49,6 +49,37 @@ LEAPER_CAPTURE = None
 EVAL_THREAD = False
 EVAL_THREAD_EXIT = False
 
+PUN_GENERATOR = None
+BAD_PUNS = [\
+    "Defibrillators are re-pulse-ive.",\
+    "Possesio is nine-tenths of the word.",\
+    "What's a rounding error like? Everything feels a bit off.",\
+    "Broken pencils are pointless.",\
+    "Got some new glasses. They're quite the spectacle.",\
+    "Misconfiguring SSL makes me feel so insecure.",\
+    "Two crows on a wire? Attempted murder.",\
+    "Three crows in a henhouse? Murder most fowl.",\
+    "Pride goes before a fall; a pride will go after a gazelle.",\
+    "There's a point to this sentence, but you won't see it until the very end.",\
+    "Everyone's a waiter when the restaurant's having a slow day.",\
+    "Fishing is a good example of a poisson process.",\
+    "What's purple and commutes? An abelian grape.",\
+    "What's yellow and equivalent to the axiom of choice? Zorn's Lemon.",\
+    "Sodium hydroxide is a lye.",\
+    "Liquid nitrogen is so cool!"]
+
+
+def pun_generator():
+    global BAD_PUNS
+    last = ['']*10
+    while True:
+        for i in range(10):
+            pun = last[0]
+            while pun in last:
+                pun = random.choice(BAD_PUNS)
+            last[i] = pun
+            yield pun
+
 def static_eval(board):
     global STATIC_VALUES, STATIC_BOARD, EMPTY, TURNS
     
@@ -80,7 +111,7 @@ def pos_val(r, c):
     return 1 + ((r)*(7-r)*(c)*(7-c))/256
 
 def makeMove(current_state, current_remark, time_limit):
-    global TURNS, EVAL_THREAD, EVAL_THREAD_EXIT, DYN_VALS, ZOB_STATES
+    global TURNS, EVAL_THREAD, EVAL_THREAD_EXIT, DYN_VALS, ZOB_STATES, PUN_GENERATOR
     if EVAL_THREAD and EVAL_THREAD.is_alive():
         EVAL_THREAD_EXIT = True
         EVAL_THREAD.join()
@@ -107,7 +138,7 @@ def makeMove(current_state, current_remark, time_limit):
         EVAL_THREAD.start()
 
     # Make up a new remark
-    new_remark = "I'll think harder in some future game. Here's my move"
+    new_remark = next(PUN_GENERATOR)
 
     return ((new_move_and_state), new_remark)
 
@@ -447,9 +478,10 @@ def introduce():
 
 
 def prepare(player2Nickname):
-    global ZOB_TBL, ZOB_STATES, PIECES, EMPTY, TURNS, STATIC_BOARD, DYN_VALS
+    global ZOB_TBL, ZOB_STATES, PIECES, EMPTY, TURNS, STATIC_BOARD, DYN_VALS, PUN_GENERATOR
     TURNS = 0
     STATIC_BOARD = dict()
+    PUN_GENERATOR = pun_generator()
     for r in range(8):
         for c in range(8):
             #print(int(pos_val(r,c)*10)/10, end=' ')
