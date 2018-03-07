@@ -7,6 +7,7 @@ from BC_state_etc import *
 import random
 import math
 import time
+import threading
 
 TIME_INC = .005 # Global variable representing the number of seconds an iteration takes
 
@@ -16,6 +17,7 @@ EMPTY = 0 # Global variable representing an empty space on the board
 
 ZOB_TBL = dict()    # Table that maps each row-col-piece combo to a unique hash
 ZOB_STATES = dict() # Table that maps board hashes to their static values
+DYN_VALS = dict()
 
 # Table mapping players to a set containing their pieces
 PIECES = {BLACK:set((BLACK_PINCER, BLACK_COORDINATOR, BLACK_LEAPER, BLACK_IMITATOR,\
@@ -34,15 +36,18 @@ STATIC_VALUES = {EMPTY:0,\
                  BLACK_LEAPER:-2, WHITE_LEAPER:2,\
                  BLACK_IMITATOR:-4, WHITE_IMITATOR:4,\
                  BLACK_WITHDRAWER:-3, WHITE_WITHDRAWER:3,\
-                 BLACK_KING:10, WHITE_KING:-10,\
-                 BLACK_FREEZER:-4, WHITE_FREEZER:4}
+                 BLACK_KING:0, WHITE_KING:0,\
+                 BLACK_FREEZER:-3, WHITE_FREEZER:3}
 # 
 STATIC_BOARD = None
 
 # Special global variable that stores potential moves involving a
 # leaper (or imitator) leaping. In that case, a capture MUST happen,
 # so no non-capturing successor boards will be considered for that move.
-LEAPER_CAPTURE = None 
+LEAPER_CAPTURE = None
+
+EVAL_THREAD = False
+EVAL_THREAD_EXIT = False
 
 def static_eval(board):
     global STATIC_VALUES, STATIC_BOARD, EMPTY, TURNS
@@ -54,35 +59,52 @@ def static_eval(board):
     elif WHITE_KING not in pieces:
         # Missing white king is a win for black
         return -math.inf
-    elif TURNS <= 10:
-        return sum((STATIC_BOARD[(r,c,board[r][c])] for c in range(8) for r in range(8)))
     else:
-        return sum((STATIC_VALUES[p] for row in board for p in row if (p != WHITE_KING and p != BLACK_KING)))
-    # Encourage spacing out pieces
-    #val += sum(((2*BC.who(board[r][c])-1)\
-    #            for r in range(8)\
-    #            for c in range(8)\
-    #            for (n_r,n_c) in get_neighborhood(r,c)\
-    #            if board[n_r][n_c] == 0))
+        if TURNS < 20:
+            val = sum((STATIC_BOARD[(r,c,board[r][c])] for c in range(8) for r in range(8)))
+        else:
+            val = sum((STATIC_VALUES[board[r][c]] for c in range(8) for r in range(8)))
+        # Ignore frozen pieces
+        for r in range(8):
+            for c in range(8):
+                if board[r][c] == BLACK_FREEZER or board[r][c] == WHITE_FREEZER:
+                    val -= sum((STATIC_BOARD[(nr,nc,board[nr][nc])] for (nr,nc) in get_neighborhood(r,c)\
+                            if board[nr][nc] != EMPTY and who(board[r][c]) != who(board[nr][nc])))/2
+        return val
+    #else:
+    #    return sum((STATIC_VALUES[p] for row in board for p in row if (p != WHITE_KING and p != BLACK_KING)))
+    #
 
 
 def pos_val(r, c):
-    return 0.75 + ((r)*(7-r)*(c)*(7-c))/256
+    return 1 + ((r)*(7-r)*(c)*(7-c))/256
 
 def makeMove(current_state, current_remark, time_limit):
-    global TURNS
+    global TURNS, EVAL_THREAD, EVAL_THREAD_EXIT, DYN_VALS, ZOB_STATES
+    if EVAL_THREAD and EVAL_THREAD.is_alive():
+        EVAL_THREAD_EXIT = True
+        EVAL_THREAD.join()
+        EVAL_THREAD_EXIT = False
+    EVAL_THREAD = False
     TURNS += 1
+    if TURNS == 20:
+        DYN_VALS = dict()
+        ZOB_STATES = dict()
 
     # Fix up whose turn it will be.
     whose_move = current_state.whose_move
     state_hash = zob_hash(current_state.board)
     new_score, new_move_and_state = iterative_deepening_minimax(current_state.board, state_hash, whose_move, time_limit)
-    print(new_score)
+    #print(new_score)
 
     # Compute the new state for a move.
     new_state = BC_state(new_move_and_state[1])
     new_state.whose_move = 1 - whose_move
     new_move_and_state = (new_move_and_state[0], new_state)
+
+    if whose_move == WHITE:
+        EVAL_THREAD = threading.Thread(target=state_evaluator, args=(new_state,))
+        EVAL_THREAD.start()
 
     # Make up a new remark
     new_remark = "I'll think harder in some future game. Here's my move"
@@ -97,41 +119,71 @@ def iterative_deepening_minimax(board, zhash, whoseMove, time_limit):
     end_time = time_limit + time.time() - TIME_INC
 
     # Set defaults
-    ply = 0
+    ply = -1
     best_move = [(1, 1), (1, 1)]
     best_score = 0
+    next_score = 0
 
     # Run minimax with increasing ply while time remaining
-    while time.time() <= end_time:
+    while time.time() <= end_time - TIME_INC:
         ply += 1
-        print("ply: ", ply)
-        next_score, next_move = minimax_move_finder(board, zhash, whoseMove, ply, end_time+TIME_INC, -math.inf, math.inf)
+        #print("ply:", ply)
+        results = minimax_move_finder(board, zhash, whoseMove, ply, end_time, -math.inf, math.inf)
+        next_score, next_move = results
 
-        if time.time() <= end_time:
+        if time.time() <= end_time - TIME_INC:
             best_move = next_move
             best_score = next_score
     return best_score, best_move
 
 
+def state_evaluator(state):
+    board = state.board
+    whose_move = state.whose_move
+    zhash = zob_hash(board)
+    
+    if zhash not in DYN_VALS:
+        DYN_VALS[zhash] = ((0, None), -1)
+    ply = (DYN_VALS[zhash])[1]
+
+    best_move = 1
+    while best_move is not None:
+        ply += 1
+        #print(("white's" if whose_move == BLACK else "black's"), "state evaluator ply:", ply)
+        try:
+            best_score, best_move = minimax_move_finder(board, zhash, whose_move, ply, math.inf)
+        except threading.ThreadError:
+            return
+
 
 def minimax_move_finder(board, zhash, whoseMove, ply_remaining, end_time, alpha=-math.inf, beta=math.inf):
-    global ZOB_STATES, TIME_INC
+    global ZOB_STATES, TIME_INC, DYN_VALS, EVAL_THREAD, EVAL_THREAD_EXIT
+    if EVAL_THREAD and EVAL_THREAD_EXIT:
+        raise threading.ThreadError
+
+    if zhash in DYN_VALS:
+        dyn_ret, dyn_ply = DYN_VALS[zhash]
+        if dyn_ply >= ply_remaining:
+            return dyn_ret
     
     # Check if a win state
-    if is_win_state(board):
+    win_state = is_win_state(board)
+    if win_state:
         if zhash not in ZOB_STATES:
-            ZOB_STATES[zhash] = static_eval(board)
-        return ZOB_STATES[zhash], None
+            ZOB_STATES[zhash] = win_state
+            DYN_VALS[zhash] = ((win_state, None), math.inf)
+        return win_state, None
 
     successor_boards = generate_successors(board, zhash, whoseMove)
 
-    if ply_remaining <= 0 or len(successor_boards) <= 0:
+    if ply_remaining <= 0 or len(successor_boards) == 0:
         if zhash not in ZOB_STATES:
             ZOB_STATES[zhash] = static_eval(board)
+            DYN_VALS[zhash] = ((ZOB_STATES[zhash], None), 0)
         return ZOB_STATES[zhash], None
 
     next_player = 1 - whoseMove
-    
+    chance = 1/2
     best_score = math.inf
     if whoseMove == WHITE: # White is the maximizing player
         best_score = -math.inf
@@ -140,9 +192,9 @@ def minimax_move_finder(board, zhash, whoseMove, ply_remaining, end_time, alpha=
 
     # Loop through all possible successor board states
     for s_move, s_board, s_hash in successor_boards:
-        # Check that there is time to deepen, if not, return best move so far
+        # Check that there is time to deepen, if not, exit
         if time.time() >= end_time:
-            return best_score, attached_move_and_state
+            return best_score, None
 
         # Stop searching if alpha-beta pruning conditions met
         if alpha >= beta:
@@ -152,7 +204,8 @@ def minimax_move_finder(board, zhash, whoseMove, ply_remaining, end_time, alpha=
         s_score = result[0]
 
         if (whoseMove == WHITE and s_score > best_score) \
-                or (whoseMove == BLACK and s_score < best_score):
+                or (whoseMove == BLACK and s_score < best_score)\
+                or (s_score == best_score and random.random() <= chance):
             best_score = s_score
             attached_move_and_state = (s_move, s_board)
 
@@ -162,15 +215,17 @@ def minimax_move_finder(board, zhash, whoseMove, ply_remaining, end_time, alpha=
             elif whoseMove == BLACK:
                  beta = min(beta, best_score)
 
+    DYN_VALS[zhash] = ((best_score, attached_move_and_state), ply_remaining)
+    
     return best_score, attached_move_and_state
 
 # Checks if current board state is a win state (no king)
 def is_win_state(board):
     pieces = set((p for row in board for p in row))
     if WHITE_KING not in pieces:
-        return math.inf
-    elif BLACK_KING not in pieces:
         return -math.inf
+    elif BLACK_KING not in pieces:
+        return math.inf
     else:
         return 0
 
@@ -270,11 +325,15 @@ def apply_captures(board, zhash, old_r, old_c, new_r, new_c, piece, capturablePi
         LEAPER_CAPTURE.remove((old_r, old_c), (new_r, new_c))
         new_board = copy_board(board)
         new_board[new_r - dr][new_c - dc] = EMPTY
+        print("leaper capture!!!!")
+        print(LEAPER_CAPTURE)
+        print(board[new_r-dr][new_c-dc])
         new_hash = zhash ^ ZOB_TBL[(new_r - dr, new_c - dc, board[new_r - dr][new_c - dc])]
         return [(new_board, new_hash)]
 
-    # We will assume that moving without capturing is considered acceptable
-    boards = [(board, zhash)]
+    # We will assume that moving without capturing is not considered acceptable
+    boards = []
+    #boards = [(board, zhash)]
     
     # Imitators capture by 'imitating' the piece to be captured
     if piece_type == BLACK_IMITATOR:
@@ -282,15 +341,15 @@ def apply_captures(board, zhash, old_r, old_c, new_r, new_c, piece, capturablePi
         # They can imitate kings and leapers; however, those are already handled above.
         if dr != 0 and dc != 0:
             # Imitators cannot imitate pincers when moving diagonally
-            possiblePieces = set((whoseMove^BLACK_COORDINATOR,\
-                                  whoseMove^BLACK_WITHDRAWER))
+            possiblePieces = set((whoseMove+BLACK_COORDINATOR,\
+                                  whoseMove+BLACK_WITHDRAWER))
         else:
-            possiblePieces = set((whoseMove^BLACK_PINCER,\
-                                  whoseMove^BLACK_COORDINATOR,\
-                                  whoseMove^BLACK_WITHDRAWER))
+            possiblePieces = set((whoseMove+BLACK_PINCER,\
+                                  whoseMove+BLACK_COORDINATOR,\
+                                  whoseMove+BLACK_WITHDRAWER))
 
         # whoseMove is 0 for black and 1 for white.
-        # So, (BLACK_X ^ whoseMove) returns a black X if whoseMove is BLACK,
+        # So, (BLACK_X + whoseMove) returns a black X if whoseMove is BLACK,
         #  and a white X if whoseMove is WHITE.
 
         for otherPiece in possiblePieces:
@@ -305,25 +364,30 @@ def apply_captures(board, zhash, old_r, old_c, new_r, new_c, piece, capturablePi
     #       (not just other pincers)
     elif piece_type == BLACK_PINCER:
         directions = [(0,1), (1,0), (-1,0), (0,-1)]
+        new_board = copy_board(board)
+        new_hash = zhash
         for (drow, dcol) in directions:
             if valid_space(new_r + drow*2, new_c + dcol*2)\
                and board[new_r+drow][new_c+dcol] in capturablePieces\
+               and board[new_r+drow*2][new_c+dcol*2] != EMPTY\
                and who(board[new_r+drow*2][new_c+dcol*2]) == whoseMove:
-                new_board = copy_board(board)
                 new_board[new_r+drow][new_c+dcol] = EMPTY
                 new_hash = zhash ^ ZOB_TBL[(new_r+drow, new_c+dcol, board[new_r+drow][new_c+dcol])]
-                boards.append((new_board, new_hash))
+        if new_hash != zhash:
+            boards.append((new_board, new_hash))
 
     # Coordinators capture by 'coordinating' with the king
     elif piece_type == BLACK_COORDINATOR:
         (king_r, king_c) = friendly_king_position(board, whoseMove)
         # Check the two spaces that the king and coordinator 'coordinate' together
+        new_board = copy_board(board)
+        new_hash = zhash
         for (r,c) in [(new_r,king_c), (king_r,new_c)]:
             if board[r][c] in capturablePieces:
-                new_board = copy_board(board)
                 new_board[r][c] = EMPTY
                 new_hash = zhash ^ ZOB_TBL[(r,c,board[r][c])]
-                boards.append((new_board, new_hash))
+        if new_hash != zhash:
+            boards.append((new_board, new_hash))
 
     # Withdrawers capture by 'withdrawing' from an opposing piece
     elif piece_type == BLACK_WITHDRAWER:
@@ -334,7 +398,9 @@ def apply_captures(board, zhash, old_r, old_c, new_r, new_c, piece, capturablePi
             new_board[old_r - dr][old_c - dc] = EMPTY
             new_hash = zhash ^ ZOB_TBL[(old_r-dr,old_c-dc,board[old_r-dr][old_c-dc])]
             boards.append((new_board, new_hash))
-    
+
+    if boards == []:
+        boards = [(board, zhash)]
     return boards
 
 
@@ -384,15 +450,18 @@ def introduce():
 
 
 def prepare(player2Nickname):
-    global ZOB_TBL, ZOB_STATES, PIECES, EMPTY, TURNS, STATIC_BOARD
+    global ZOB_TBL, ZOB_STATES, PIECES, EMPTY, TURNS, STATIC_BOARD, DYN_VALS
     TURNS = 0
     STATIC_BOARD = dict()
     for r in range(8):
         for c in range(8):
-            print(int(pos_val(r,c)*10)/10, end=' ')
+            #print(int(pos_val(r,c)*10)/10, end=' ')
             for key in STATIC_VALUES.keys():
-                STATIC_BOARD[(r,c,key)] = pos_val(r,c)*STATIC_VALUES[key]
-        print()
+                if key == EMPTY:
+                    STATIC_BOARD[(r,c,key)] = (r-3.5)//2
+                else:
+                    STATIC_BOARD[(r,c,key)] = pos_val(r,c)*(2*who(key)-1)*STATIC_VALUES[key]
+        #print()
 
     # Set up Zobrist hashing - Assuming default board size 8 x 8
     for row in range(8):
