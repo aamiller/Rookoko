@@ -25,6 +25,7 @@ def makeMove(currentState, currentRemark, timelimit):
     possible_boards = generate_successors(currentState.board, currentState.whose_move)
     new_move, new_board = random.choice(possible_boards)
     newState.board = new_board
+    print(new_board)
 
     # Make up a new remark
     newRemark = "I'm not very good at this game yet. I am not moving, which isn't legal, but... whatever."
@@ -104,7 +105,7 @@ def generate_successors(board, whoseMove):
         
             for (new_r, new_c) in possible_spaces:
                 # Apply move to board
-                new_move, new_board = apply_move(board, zhash, row, col, new_r, new_c)
+                new_move, new_board = apply_move(board, row, col, new_r, new_c)
                 # Apply any captures to board
                 new_boards = apply_captures(new_board, row, col, new_r, new_c,\
                                             piece, opponentPieces, whoseMove)
@@ -136,7 +137,7 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, w
         LEAPER_CAPTURE.remove((old_r, old_c), (new_r, new_c))
         new_board = copy_board(board)
         new_board[new_r - dr][new_c - dc] = EMPTY
-        return [(new_board,)]
+        return [new_board]
 
     # We will assume that moving without capturing is not considered acceptable
     boards = []
@@ -178,7 +179,7 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, w
                and board[new_r+drow*2][new_c+dcol*2] != EMPTY\
                and who(board[new_r+drow*2][new_c+dcol*2]) == whoseMove:
                 new_board[new_r+drow][new_c+dcol] = EMPTY
-        boards.append((new_board,))
+        boards.append(new_board)
 
     # Coordinators capture by 'coordinating' with the king
     elif piece_type == BLACK_COORDINATOR:
@@ -188,7 +189,7 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, w
         for (r,c) in [(new_r,king_c), (king_r,new_c)]:
             if board[r][c] in capturablePieces:
                 new_board[r][c] = EMPTY
-        boards.append((new_board,))
+        boards.append(new_board)
 
     # Withdrawers capture by 'withdrawing' from an opposing piece
     elif piece_type == BLACK_WITHDRAWER:
@@ -197,10 +198,10 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, w
            and board[old_r - dr][old_c - dc] in capturablePieces:
             new_board = copy_board(board)
             new_board[old_r - dr][old_c - dc] = EMPTY
-            boards.append((new_board, new_hash))
+            boards.append(new_board)
 
     if boards == []:
-        boards = [(board,)]
+        boards = [board]
     return boards
 
 
