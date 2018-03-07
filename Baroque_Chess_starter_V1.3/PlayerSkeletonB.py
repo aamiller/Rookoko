@@ -22,7 +22,7 @@ def makeMove(currentState, currentRemark, timelimit):
 
     # Fix up whose turn it will be.
     newState.whose_move = 1 - currentState.whose_move
-    possible_boards = generate_successors
+    possible_boards = generate_successors()
     new_move, new_board = random.choice(possible_boards)
     newState.board = new_board
 
