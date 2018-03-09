@@ -100,7 +100,7 @@ def generate_successors(board, whoseMove):
                         piece == WHITE_LEAPER or\
                         (piece == BLACK_IMITATOR and target == WHITE_LEAPER) or\
                         (piece == WHITE_IMITATOR and target == BLACK_LEAPER)):
-                        LEAPER_CAPTURE.append((new_r + dr, new_c + dc))
+                        LEAPER_CAPTURE.append(((row, col),(new_r + dr, new_c + dc)))
                         possible_spaces.append((new_r + dr, new_c + dc))
         
             for (new_r, new_c) in possible_spaces:
@@ -123,21 +123,21 @@ def apply_captures(board, old_r, old_c, new_r, new_c, piece, capturablePieces, w
     # Looks for all possible captures, and then applies them, returning a list of new board states
     
     # Fast and mysterious way to make dr and dc either 1, 0, or -1
-    (dr, dc) = ((old_r > new_r) - (old_r < new_r),\
-                (old_c > new_c) - (old_c < new_c))
+    (dr, dc) = ((old_r < new_r) - (old_r > new_r),\
+                (old_c < new_c) - (old_c > new_c))
     # Fast and mysterious way to get the piece 'type', in terms of its black-piece equivalent
     piece_type = (piece >> 1) << 1
 
     # Leapers capture by 'leaping over' opposing pieces
     # Leaper captures must be handled specially, because moving without capture is not acceptable.
     # Note that this will also handle the case of imitators imitating leapers
-    if ((old_r, old_c), (new_r, new_c)) in LEAPER_CAPTURE:
+    if (((old_r, old_c), (new_r, new_c))) in LEAPER_CAPTURE:
         # The space 'behind' the leaper's final position will already have been checked above
-        # if board[new_r - dr][new_c - dc] in capturablePieces:
-        LEAPER_CAPTURE.remove((old_r, old_c), (new_r, new_c))
-        new_board = copy_board(board)
-        new_board[new_r - dr][new_c - dc] = EMPTY
-        return [new_board]
+        LEAPER_CAPTURE.remove(((old_r, old_c), (new_r, new_c)))
+        if board[new_r - dr][new_c - dc] in capturablePieces:
+            new_board = copy_board(board)
+            new_board[new_r - dr][new_c - dc] = EMPTY
+            return [new_board]
 
     # We will assume that moving without capturing is not considered acceptable
     boards = []

@@ -129,7 +129,7 @@ def makeMove(current_state, current_remark, time_limit):
     whose_move = current_state.whose_move
     state_hash = zob_hash(current_state.board)
     new_score, new_move_and_state, ply_used = iterative_deepening_minimax(current_state.board, state_hash, whose_move, time_limit)
-    #print(new_score)
+    print("Current state static value:", new_score)
     print("IDDFS reached ply", ply_used, "before running out of time.")
     print("Minimax search performed", STATISTICS["AB_CUTOFFS"], "alpha-beta cutoffs.")
     print("Minimax search performed", STATISTICS["STATIC_EVALS"], "static evals.")
@@ -330,15 +330,13 @@ def generate_successors(board, zhash, whoseMove):
                     new_c += dc
                 # Leapers can leap (and imitators can leap over leapers)
                 # The 'leapee' should be at board[new_r][new_c]
-                if valid_space(new_r + dr, new_c + dc) and\
-                   board[new_r + dr][new_c + dc] == EMPTY:
+                if valid_space(new_r + dr, new_c + dc) and (board[new_r + dr][new_c + dc] == EMPTY):
                     target = board[new_r][new_c]
                     if target in opponentPieces and\
-                       (piece == BLACK_LEAPER or\
-                        piece == WHITE_LEAPER or\
+                       (piece == BLACK_LEAPER or piece == WHITE_LEAPER or\
                         (piece == BLACK_IMITATOR and target == WHITE_LEAPER) or\
                         (piece == WHITE_IMITATOR and target == BLACK_LEAPER)):
-                        LEAPER_CAPTURE.append((new_r + dr, new_c + dc))
+                        LEAPER_CAPTURE.append([(row, col),(new_r + dr, new_c + dc)])
                         possible_spaces.append((new_r + dr, new_c + dc))
         
             for (new_r, new_c) in possible_spaces:
@@ -353,7 +351,7 @@ def generate_successors(board, zhash, whoseMove):
 
 def valid_space(row, col):
     # Returns whether the given coordinates fall within the boundaries of the board
-    return (0 <= row < 8) and (0 <= col < 8)
+    return (0 <= row <= 7) and (0 <= col <= 7)
 
 
 def apply_captures(board, zhash, old_r, old_c, new_r, new_c, piece, capturablePieces, whoseMove):
@@ -361,22 +359,22 @@ def apply_captures(board, zhash, old_r, old_c, new_r, new_c, piece, capturablePi
     # Looks for all possible captures, and then applies them, returning a list of new board states
     
     # Fast and mysterious way to make dr and dc either 1, 0, or -1
-    (dr, dc) = ((old_r > new_r) - (old_r < new_r),\
-                (old_c > new_c) - (old_c < new_c))
+    (dr, dc) = ((old_r < new_r) - (old_r > new_r),\
+                (old_c < new_c) - (old_c > new_c))
     # Fast and mysterious way to get the piece 'type', in terms of its black-piece equivalent
     piece_type = (piece >> 1) << 1
 
     # Leapers capture by 'leaping over' opposing pieces
     # Leaper captures must be handled specially, because moving without capture is not acceptable.
     # Note that this will also handle the case of imitators imitating leapers
-    if ((old_r, old_c), (new_r, new_c)) in LEAPER_CAPTURE:
+    if [(old_r, old_c), (new_r, new_c)] in LEAPER_CAPTURE:
         # The space 'behind' the leaper's final position will already have been checked above
-        # if board[new_r - dr][new_c - dc] in capturablePieces:
-        LEAPER_CAPTURE.remove((old_r, old_c), (new_r, new_c))
-        new_board = copy_board(board)
-        new_board[new_r - dr][new_c - dc] = EMPTY
-        new_hash = zhash ^ ZOB_TBL[(new_r - dr, new_c - dc, board[new_r - dr][new_c - dc])]
-        return [(new_board, new_hash)]
+        LEAPER_CAPTURE.remove([(old_r, old_c), (new_r, new_c)])
+        if board[new_r - dr][new_c - dc] in capturablePieces:
+            new_board = copy_board(board)
+            new_board[new_r - dr][new_c - dc] = EMPTY
+            new_hash = zhash ^ ZOB_TBL[(new_r - dr, new_c - dc, board[new_r - dr][new_c - dc])]
+            return [(new_board, new_hash)]
 
     # We will assume that moving without capturing is not considered acceptable
     boards = []
